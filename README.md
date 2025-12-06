@@ -89,4 +89,26 @@ npm run build
 ```
 
 This will generate a `dist` folder in the project root containing the static HTML, CSS, and JavaScript files that can be deployed to any static hosting provider.
-This will generate a `dist` folder in the project root containing the static HTML, CSS, and JavaScript files that can be deployed to any static hosting provider.
+
+## 🔧 Troubleshooting
+
+### Error: "column student_record_id does not exist"
+
+If you encounter this error when students try to log in or access their accounts, it means your database is missing the `student_record_id` column in the `student_profiles` table. This happens when the database was created with an older version of the schema.
+
+**Solution:**
+
+Run the migration scripts in the `supabase/migrations/` folder in this order:
+
+1. `add_student_record_id_to_student_profiles.sql` - Adds the missing column
+2. `fix_handle_new_user_trigger.sql` - Updates the trigger for future student accounts
+
+See the detailed instructions in [`supabase/migrations/README.md`](./supabase/migrations/README.md) for step-by-step guidance on applying these migrations.
+
+### Other Common Issues
+
+- **White Screen on Load**: Check browser console for errors and verify your `.env` file has correct Supabase credentials
+- **Database Schema Errors**: Make sure you've run the complete schema from the "Critical Application Error" page or from `database_schema.sql`
+- **Authentication Issues**: Verify your Supabase project has RLS (Row Level Security) policies enabled
+
+For more detailed troubleshooting, see [`BUILD_GUIDE.md`](./BUILD_GUIDE.md) and [`DEPLOYMENT.md`](./DEPLOYMENT.md).
