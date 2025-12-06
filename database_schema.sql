@@ -1035,10 +1035,8 @@ BEGIN
     SET user_id = NULL
     WHERE user_id = OLD.id;
     
-    -- Also clean up student_profiles if they exist
-    -- The CASCADE should handle this, but we'll be explicit
-    DELETE FROM public.student_profiles
-    WHERE id = OLD.id;
+    -- Note: student_profiles will be automatically deleted by CASCADE
+    -- due to the foreign key constraint: REFERENCES auth.users(id) ON DELETE CASCADE
     
     RETURN OLD;
 END;
