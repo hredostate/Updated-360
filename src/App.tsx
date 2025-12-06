@@ -2940,6 +2940,11 @@ const App: React.FC = () => {
 
     const handleApproveLeaveRequest = useCallback(async (requestId: number, status: 'Approved' | 'Rejected', notes?: string): Promise<boolean> => {
         if (!userProfile) return false;
+        // Validate status
+        if (status !== 'Approved' && status !== 'Rejected') {
+            addToast('Invalid status value', 'error');
+            return false;
+        }
         const mappedStatus = status === 'Approved' ? LeaveRequestStatus.Approved : LeaveRequestStatus.Rejected;
         const { error } = await Offline.update('leave_requests', { status: mappedStatus, approved_by: userProfile.id }, { id: requestId });
         if (error) {

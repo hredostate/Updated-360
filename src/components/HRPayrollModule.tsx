@@ -385,7 +385,14 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
                     allRequests={safeLeaveRequests}
                     onUpdateStatus={async (requestId: number, status: LeaveRequestStatus): Promise<boolean> => {
                         // Convert LeaveRequestStatus enum to the expected 'Approved' | 'Rejected' format
-                        const mappedStatus = status === LeaveRequestStatus.Approved ? 'Approved' : 'Rejected';
+                        // Only Approved and Rejected are actionable statuses from the approval view
+                        const mappedStatus = status === LeaveRequestStatus.Approved ? 'Approved' : 
+                                            status === LeaveRequestStatus.Rejected ? 'Rejected' : 
+                                            null;
+                        if (!mappedStatus) {
+                            addToast('Invalid status update', 'error');
+                            return false;
+                        }
                         return await onApproveLeaveRequest(requestId, mappedStatus);
                     }}
                     teams={safeTeams}
@@ -480,7 +487,7 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
 // Simple Error Boundary Component for HR Payroll Module
 class ErrorBoundary extends React.Component<
     { children: React.ReactNode },
-    { hasError: boolean; error?: Error }
+    { hasError: boolean; errorMessage?: string }
 > {
     constructor(props: { children: React.ReactNode }) {
         super(props);
@@ -488,7 +495,7 @@ class ErrorBoundary extends React.Component<
     }
 
     static getDerivedStateFromError(error: Error) {
-        return { hasError: true, error };
+        return { hasError: true, errorMessage: error.toString() };
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -507,16 +514,16 @@ class ErrorBoundary extends React.Component<
                         An error occurred while loading this section. Please try refreshing the page or contact support if the problem persists.
                     </p>
                     <button
-                        onClick={() => this.setState({ hasError: false, error: undefined })}
+                        onClick={() => this.setState({ hasError: false, errorMessage: undefined })}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                     >
                         Try Again
                     </button>
-                    {this.state.error && (
+                    {this.state.errorMessage && (
                         <details className="mt-4 text-xs text-slate-500 max-w-md">
                             <summary className="cursor-pointer">Error details</summary>
                             <pre className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded overflow-auto">
-                                {this.state.error.toString()}
+                                {this.state.errorMessage}
                             </pre>
                         </details>
                     )}
