@@ -1,0 +1,78 @@
+# Enable RewriteEngine
+RewriteEngine On
+
+# Set the base directory
+RewriteBase /
+
+# MIME Types - Ensure JavaScript files are served correctly
+AddType application/javascript .js
+AddType application/javascript .mjs
+AddType text/css .css
+AddType image/svg+xml .svg
+AddType application/json .json
+AddType application/manifest+json .webmanifest
+AddType image/png .png
+AddType image/x-icon .ico
+
+# Enable GZIP compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    # Cache hashed assets for 1 year (they have content hashes in filename)
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType application/manifest+json "access plus 1 week"
+    # Don't cache HTML - always revalidate
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Cache-Control headers for proper caching strategy
+<IfModule mod_headers.c>
+    # HTML files should not be cached
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    
+    # Hashed assets can be cached for 1 year
+    <FilesMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Content Security Policy
+    # Allow scripts from self, aistudiocdn.com (import maps), and inline scripts
+    # Allow styles from self and inline styles
+    # Allow images from self and Supabase storage
+    # Allow connections to self, aistudiocdn.com, and Supabase
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://aistudiocdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tyvufbldcucgmmlattct.supabase.co; connect-src 'self' https://aistudiocdn.com https://tyvufbldcucgmmlattct.supabase.co wss://tyvufbldcucgmmlattct.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';"
+</IfModule>
+
+# Handle SPA routing - redirect all requests to index.html
+# This ensures React Router works correctly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# Prevent directory listing
+Options -Indexes
+
+# Prevent access to hidden files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

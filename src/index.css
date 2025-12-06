@@ -1,0 +1,192 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  @apply h-full;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* NEW ANIMATIONS */
+@keyframes success-pulse-and-rotate {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; }
+  25% { transform: scale(1.1) rotate(10deg); }
+  50% { transform: scale(1) rotate(0deg); opacity: 1; }
+  75% { transform: scale(1.1) rotate(-10deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-success {
+  animation: success-pulse-and-rotate 0.6s ease-out;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+body {
+  /* Vibrant background to make glassmorphism pop */
+  @apply bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900 text-slate-900 dark:text-slate-100 bg-fixed;
+}
+
+/* Custom Scrollbar for a more modern feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* slate-400 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+}
+
+/* Basic prose styles for rendering HTML content */
+.prose p { @apply my-2; }
+.prose ul { @apply list-disc list-inside my-2 pl-2; }
+.prose ol { @apply list-decimal list-inside my-2 pl-2; }
+.prose li { @apply my-1; }
+.prose a { @apply text-blue-600 underline; }
+.prose strong, .prose b { @apply font-bold text-slate-900 dark:text-white; }
+.prose em, .prose i { @apply italic; }
+.prose u { @apply underline; }
+.prose h2 { @apply text-xl font-bold my-4 text-indigo-900 dark:text-indigo-200; }
+.prose h3 { @apply text-lg font-bold my-3 text-indigo-800 dark:text-indigo-300; }
+
+/* Styles for drag-and-drop functionality */
+.dragging {
+  opacity: 0.5;
+  transform: rotate(3deg);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+@layer components {
+  /* General transitions for buttons and other interactive elements */
+  button {
+    @apply transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+  }
+  
+  button:active {
+    @apply scale-95;
+  }
+  
+  /* Enhanced Glassmorphism Utility - "Louder" and clearer */
+  /* Increased opacity for legibility, stronger border and shadow */
+  .glass-panel {
+    @apply bg-white/90 dark:bg-slate-900/95 backdrop-blur-3xl border border-white/60 dark:border-slate-700/60 shadow-2xl shadow-indigo-500/10 dark:shadow-black/40;
+  }
+
+  .glass-panel-hover {
+    @apply transition-all duration-300 ease-in-out hover:scale-[1.01] hover:shadow-blue-500/20 dark:hover:shadow-blue-900/40 hover:border-blue-400/50 dark:hover:border-blue-500/50;
+  }
+  
+  .card-hover {
+    @apply glass-panel-hover;
+  }
+
+  /* Helper for text that shouldn't be cut off */
+  .text-wrap-balance {
+    text-wrap: balance;
+  }
+}
+
+
+/* Print-specific styles for PDF export and ID Cards */
+@media print {
+  body {
+    background: none !important;
+  }
+  
+  /* Hide everything except the main content area for printing */
+  aside, header, #root > div > button, .no-print {
+    display: none !important;
+  }
+  
+  #root {
+    display: block !important;
+  }
+
+  /* Ensure the main content takes up the full page */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Specific styles for the analytics view print layout */
+  .printable-area {
+    padding: 1rem;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  .printable-area h1, .printable-area h2, .printable-area h3 {
+    color: black !important;
+  }
+
+  .printable-area p, .printable-area span, .printable-area td, .printable-area th, .printable-area text {
+    color: black !important;
+    fill: black !important;
+  }
+
+  /* Recharts fix for printing */
+  .recharts-wrapper {
+    page-break-inside: avoid;
+  }
+
+  .recharts-surface {
+    overflow: visible;
+  }
+  
+  .printable-report {
+    width: 100%;
+    margin: 0;
+    padding: 1in;
+    box-sizing: border-box;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    font-size: 10pt;
+  }
+  
+  .printable-report h1, .printable-report h2, .printable-report h3, .printable-report p, .printable-report span, .printable-report td, .printable-report th {
+    color: black !important;
+  }
+  
+  .printable-report table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+  
+  .printable-report th, .printable-report td {
+      border: 1px solid #ccc;
+      padding: 8px;
+  }
+  
+  .printable-report th {
+      background-color: #f2f2f2;
+  }
+}

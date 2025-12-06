@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="https://tyvufbldcucgmmlattct.supabase.co/storage/v1/object/public/Images/imageedit_1_5058819643%20(1).png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Guardian 360</title>
+    
+    <!-- Deployment update handler: Reload on script load failure -->
+    <script>
+      // Track if we've already tried reloading
+      const RELOAD_KEY = 'sg360_deployment_reload';
+      
+      // Handle script load errors (404 for old chunks after deployment)
+      window.addEventListener('error', function(e) {
+        // Check if it's a script loading error
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          const hasReloaded = sessionStorage.getItem(RELOAD_KEY);
+          
+          if (!hasReloaded) {
+            console.log('Asset load failed, likely due to deployment. Reloading...');
+            sessionStorage.setItem(RELOAD_KEY, 'true');
+            // Clear any service worker caches
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(name) {
+                  caches.delete(name);
+                });
+              });
+            }
+            // Reload the page to get fresh HTML with correct asset references
+            window.location.reload(true);
+          } else {
+            // Already tried reloading once, show error to user
+            console.error('Failed to load application assets even after reload. Please check your connection or clear your browser cache.');
+            
+            // Create error UI
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 2rem; text-align: center; font-family: system-ui, -apple-system, sans-serif;';
+            errorDiv.innerHTML = 
+              '<div style="max-width: 500px; background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">' +
+              '<svg style="width: 64px; height: 64px; margin: 0 auto 1rem; color: #ef4444;" fill="none" viewBox="0 0 24 24" stroke="currentColor">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />' +
+              '</svg>' +
+              '<h1 style="font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 0.5rem;">Failed to Load Application</h1>' +
+              '<p style="color: #6b7280; margin-bottom: 1.5rem;">The application files could not be loaded. This may be due to a recent deployment.</p>' +
+              '<p style="color: #6b7280; margin-bottom: 1.5rem; font-size: 0.875rem;">Please try:</p>' +
+              '<ul style="text-align: left; color: #6b7280; margin-bottom: 1.5rem; font-size: 0.875rem; padding-left: 1.5rem;">' +
+              '<li>Refreshing the page (Ctrl+F5 or Cmd+Shift+R)</li>' +
+              '<li>Clearing your browser cache</li>' +
+              '<li>Using incognito/private mode</li>' +
+              '</ul>' +
+              '<button id="retry-btn" style="background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; font-weight: 600; cursor: pointer; font-size: 1rem;">Try Again</button>' +
+              '</div>';
+            
+            // Replace root content
+            const root = document.getElementById('root');
+            root.innerHTML = '';
+            root.appendChild(errorDiv);
+            
+            // Add event listener for retry button (CSP compliant)
+            document.getElementById('retry-btn').addEventListener('click', function() {
+              sessionStorage.removeItem(RELOAD_KEY);
+              window.location.reload(true);
+            });
+          }
+        }
+      }, true);
+      
+      // Clear reload flag on successful load
+      window.addEventListener('load', function() {
+        sessionStorage.removeItem(RELOAD_KEY);
+      });
+    </script>
+    
+<script type="importmap">
+{
+  "imports": {
+    "vite": "https://aistudiocdn.com/vite@^7.1.12",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@supabase/supabase-js": "https://aistudiocdn.com/@supabase/supabase-js@^2.76.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "@supabase/gotrue-js": "https://aistudiocdn.com/@supabase/gotrue-js@^2.78.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "@tinymce/tinymce-react": "https://aistudiocdn.com/@tinymce/tinymce-react@^6.3.0",
+    "axios": "https://aistudiocdn.com/axios@^1.13.1",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
+    "vite-plugin-pwa": "https://aistudiocdn.com/vite-plugin-pwa@^1.1.0",
+    "localforage": "https://aistudiocdn.com/localforage@^1.10.0",
+    "vite-plugin-pwa/": "https://aistudiocdn.com/vite-plugin-pwa@^1.1.0/",
+    "@supabase/auth-js": "https://aistudiocdn.com/@supabase/auth-js@^2.81.1",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

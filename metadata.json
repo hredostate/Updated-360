@@ -1,0 +1,9 @@
+{
+  "name": "Copy of School Guardian 360 v7",
+  "description": "An AI-powered dashboard for school administrators to manage reports, tasks, students, and institutional data, providing actionable insights and proactive intelligence to foster a safe and efficient learning environment.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
