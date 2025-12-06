@@ -10,6 +10,22 @@ echo "School Guardian 360 - Post-Build Packaging"
 echo "================================================"
 echo ""
 
+# Check for required dependencies
+if ! command -v zip &> /dev/null; then
+    echo "❌ Error: 'zip' command not found."
+    echo "Please install zip utility:"
+    echo "  - Ubuntu/Debian: sudo apt-get install zip"
+    echo "  - macOS: zip is usually pre-installed"
+    echo "  - Windows: Install via WSL or use 7-Zip"
+    exit 1
+fi
+
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: 'node' command not found."
+    echo "Please install Node.js from https://nodejs.org/"
+    exit 1
+fi
+
 # Get current date and time for versioning
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 VERSION=$(node -p "require('./package.json').version")

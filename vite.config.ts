@@ -75,8 +75,8 @@ export default defineConfig({
     }),
   ],
   build: {
-    // Generate source maps for debugging
-    sourcemap: false,
+    // Generate source maps for debugging (useful for production troubleshooting)
+    sourcemap: true,
     // Ensure unique chunk names with content hash
     rollupOptions: {
       output: {
