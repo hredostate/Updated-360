@@ -2844,6 +2844,113 @@ const App: React.FC = () => {
         else { addToast('Payroll run initiated', 'success'); if(session?.user) fetchData(session.user, true); }
     }, [payrollAdjustments, users, addToast, fetchData, session]);
 
+    // --- Shift Handlers ---
+    const handleSaveShift = useCallback(async (shift: Partial<TeacherShift>): Promise<boolean> => {
+        if (!userProfile) return false;
+        const { id, ...updates } = shift;
+        const payload = { ...updates, school_id: userProfile.school_id };
+        
+        if (id) {
+            const { error } = await Offline.update('teacher_shifts', payload, { id });
+            if (error) {
+                addToast(error.message, 'error');
+                return false;
+            }
+            setTeacherShifts(prev => prev.map(s => s.id === id ? { ...s, ...payload } as TeacherShift : s));
+        } else {
+            const { data, error } = await Offline.insert('teacher_shifts', payload);
+            if (error) {
+                addToast(error.message, 'error');
+                return false;
+            }
+            if (data) setTeacherShifts(prev => [...prev, data]);
+        }
+        addToast('Shift saved successfully.', 'success');
+        return true;
+    }, [userProfile, addToast]);
+
+    const handleDeleteShift = useCallback(async (id: number): Promise<boolean> => {
+        const { error } = await Offline.del('teacher_shifts', { id });
+        if (error) {
+            addToast(error.message, 'error');
+            return false;
+        }
+        setTeacherShifts(prev => prev.filter(s => s.id !== id));
+        addToast('Shift deleted.', 'success');
+        return true;
+    }, [addToast]);
+
+    // --- Leave Type Handlers ---
+    const handleSaveLeaveType = useCallback(async (leaveType: Partial<LeaveType>): Promise<boolean> => {
+        if (!userProfile) return false;
+        const { id, ...updates } = leaveType;
+        const payload = { ...updates, school_id: userProfile.school_id };
+        
+        if (id) {
+            const { error } = await Offline.update('leave_types', payload, { id });
+            if (error) {
+                addToast(error.message, 'error');
+                return false;
+            }
+            setLeaveTypes(prev => prev.map(lt => lt.id === id ? { ...lt, ...payload } as LeaveType : lt));
+        } else {
+            const { data, error } = await Offline.insert('leave_types', payload);
+            if (error) {
+                addToast(error.message, 'error');
+                return false;
+            }
+            if (data) setLeaveTypes(prev => [...prev, data]);
+        }
+        addToast('Leave type saved successfully.', 'success');
+        return true;
+    }, [userProfile, addToast]);
+
+    const handleDeleteLeaveType = useCallback(async (id: number): Promise<boolean> => {
+        const { error } = await Offline.del('leave_types', { id });
+        if (error) {
+            addToast(error.message, 'error');
+            return false;
+        }
+        setLeaveTypes(prev => prev.filter(lt => lt.id !== id));
+        addToast('Leave type deleted.', 'success');
+        return true;
+    }, [addToast]);
+
+    // --- Leave Request Handlers ---
+    const handleSubmitLeaveRequest = useCallback(async (request: Partial<LeaveRequest>): Promise<boolean> => {
+        if (!userProfile) return false;
+        const payload = { ...request, requester_id: userProfile.id, school_id: userProfile.school_id, status: LeaveRequestStatus.Pending };
+        const { error, data } = await Offline.insert('leave_requests', payload);
+        if (error) {
+            addToast(error.message, 'error');
+            return false;
+        }
+        if (data) {
+            // Fetch the full leave request with relations
+            const { data: fullRequest } = await supabase
+                .from('leave_requests')
+                .select('*, leave_type:leave_types(*), requester:user_profiles!requester_id(*)')
+                .eq('id', data.id)
+                .single();
+            if (fullRequest) setLeaveRequests(prev => [...prev, fullRequest as any]);
+        }
+        addToast('Leave request submitted.', 'success');
+        return true;
+    }, [userProfile, addToast]);
+
+    const handleApproveLeaveRequest = useCallback(async (requestId: number, status: 'Approved' | 'Rejected', notes?: string): Promise<boolean> => {
+        if (!userProfile) return false;
+        const mappedStatus = status === 'Approved' ? LeaveRequestStatus.Approved : LeaveRequestStatus.Rejected;
+        const { error } = await Offline.update('leave_requests', { status: mappedStatus, approved_by: userProfile.id }, { id: requestId });
+        if (error) {
+            addToast(error.message, 'error');
+            return false;
+        }
+        setLeaveRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: mappedStatus } : r));
+        addToast(`Leave request ${status.toLowerCase()}.`, 'success');
+        return true;
+    }, [userProfile, addToast]);
+
 
     // ... (Rendering Logic) ...
 
@@ -3108,6 +3215,7 @@ const App: React.FC = () => {
                     leaveRequests={leaveRequests}
                     onSubmitLeaveRequest={handleSubmitLeaveRequest}
                     onApproveLeaveRequest={handleApproveLeaveRequest}
+                    teams={teams}
                 />;
             case VIEWS.MY_PAYROLL:
                 return <MyPayrollView payrollRuns={payrollRuns} payrollItems={payrollItems} currentUser={staffProfile} />;
