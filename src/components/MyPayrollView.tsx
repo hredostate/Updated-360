@@ -11,7 +11,18 @@ interface MyPayrollViewProps {
 const MyPayrollView: React.FC<MyPayrollViewProps> = ({ payrollRuns, payrollItems, currentUser }) => {
     const [expandedRunId, setExpandedRunId] = useState<number | null>(null);
 
+    // Add null safety
+    if (!currentUser || !currentUser.id) {
+        return (
+            <div className="text-center p-8 text-slate-500">
+                <p>Unable to load payroll information. User profile not found.</p>
+            </div>
+        );
+    }
+
     const myPayrollHistory = useMemo(() => {
+        if (!payrollItems || !payrollRuns) return [];
+        
         const myItems = payrollItems.filter(item => item.user_id === currentUser.id);
         const myRunIds = new Set(myItems.map(item => item.payroll_run_id));
         return payrollRuns

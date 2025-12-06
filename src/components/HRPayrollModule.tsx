@@ -151,7 +151,15 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
     onApproveLeaveRequest
 }) => {
     // Add null safety for all props including userProfile
-    const safeUserProfile = userProfile || { id: '', full_name: '', email: '', role: 'Teacher' as const };
+    if (!userProfile) {
+        return (
+            <div className="flex flex-col items-center justify-center h-96 space-y-4">
+                <p className="text-lg text-slate-500">Loading user profile...</p>
+            </div>
+        );
+    }
+    
+    const safeUserProfile = userProfile;
     const safeUsers = users || [];
     const safePayrollRuns = payrollRuns || [];
     const safePayrollItems = payrollItems || [];
@@ -322,7 +330,23 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
             case 'my_payslips':
                 return <MyPayrollView currentUser={userProfile} payrollRuns={safePayrollRuns} payrollItems={safePayrollItems} />;
             case 'my_leave':
-                return <MyLeaveView currentUser={userProfile} leaveTypes={safeLeaveTypes} leaveRequests={safeLeaveRequests} onSubmitRequest={onSubmitLeaveRequest} />;
+                return <MyLeaveView 
+                    currentUser={safeUserProfile} 
+                    leaveTypes={safeLeaveTypes} 
+                    leaveRequests={safeLeaveRequests} 
+                    onSave={onSubmitLeaveRequest}
+                    onDelete={async (id: number) => {
+                        // Delete leave request
+                        const { error } = await (window as any).supa?.from('leave_requests').delete().eq('id', id);
+                        if (error) {
+                            addToast('Failed to delete leave request', 'error');
+                            return false;
+                        }
+                        addToast('Leave request deleted', 'success');
+                        return true;
+                    }}
+                    addToast={addToast}
+                />;
             case 'my_adjustments':
                 return <MyAdjustmentsView currentUser={userProfile} />;
             case 'run_payroll':

@@ -1850,6 +1850,8 @@ const App: React.FC = () => {
                 throw new Error("Supabase client not fully initialized");
             }
 
+            console.log(`Attempting to delete ${userIds.length} student accounts`);
+
             const { data, error } = await supabase.functions.invoke('manage-users', {
                 body: { action: 'bulk_delete', studentIds: userIds }
             });
@@ -1868,11 +1870,28 @@ const App: React.FC = () => {
                 throw new Error(data.error);
             }
 
-            // Refresh student data to reflect the deleted accounts
-            const { data: updatedStudents } = await supabase.from('students').select('*, class:classes(*), arm:arms(*)');
-            if (updatedStudents) setStudents(updatedStudents);
+            console.log(`Deletion completed: ${data.deleted} of ${data.total} accounts deleted`);
+            
+            // If some deletions failed, log the failures
+            if (data.results && data.deleted < data.total) {
+                const failures = data.results.filter((r: any) => r.status === 'Failed');
+                console.error('Failed deletions:', failures);
+            }
 
-            addToast(`Deleted ${data.deleted} of ${data.total} accounts`, data.deleted === data.total ? 'success' : 'info');
+            // Refresh student data to reflect the deleted accounts
+            // Add a small delay to ensure database triggers have completed
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const { data: updatedStudents } = await supabase.from('students').select('*, class:classes(*), arm:arms(*)');
+            if (updatedStudents) {
+                setStudents(updatedStudents);
+                console.log(`Refreshed student data: ${updatedStudents.length} students`);
+            }
+
+            const message = data.deleted === data.total 
+                ? `Successfully deleted ${data.deleted} account${data.deleted !== 1 ? 's' : ''}`
+                : `Deleted ${data.deleted} of ${data.total} accounts. ${data.total - data.deleted} failed.`;
+            
+            addToast(message, data.deleted === data.total ? 'success' : 'info');
             return { success: true, deleted: data.deleted, total: data.total };
         } catch (e: any) {
             console.error("Bulk Delete Accounts Error:", e);
