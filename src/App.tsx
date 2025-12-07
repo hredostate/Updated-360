@@ -794,15 +794,21 @@ const App: React.FC = () => {
                             } catch (e) {
                                 console.warn('[Orders] Full query failed, falling back to basic query without order_notes:', e);
                                 // Fallback: simpler query without order_notes
-                                const fallbackResult = await supabase.from('orders')
-                                    .select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email)')
-                                    .order('created_at', { ascending: false });
-                                
-                                // Return data with null error if fallback succeeded, otherwise return the fallback error
-                                return { 
-                                    data: fallbackResult.data ?? [], 
-                                    error: fallbackResult.error ? fallbackResult.error : null 
-                                };
+                                try {
+                                    const fallbackResult = await supabase.from('orders')
+                                        .select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email)')
+                                        .order('created_at', { ascending: false });
+                                    
+                                    // Return data with null error if fallback succeeded, otherwise return the fallback error
+                                    return { 
+                                        data: fallbackResult.data ?? [], 
+                                        error: fallbackResult.error 
+                                    };
+                                } catch (fallbackError) {
+                                    // If even fallback fails, return empty data with the error
+                                    console.error('[Orders] Fallback query also failed:', fallbackError);
+                                    return { data: [], error: fallbackError as any };
+                                }
                             }
                         };
 
@@ -3717,10 +3723,15 @@ const App: React.FC = () => {
             if (newOrders) setOrders(newOrders as any);
         } catch (e) {
             console.warn('[Orders] Full query failed, falling back to basic query without order_notes:', e);
-            const { data: newOrders } = await supabase.from('orders')
-                .select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email)')
-                .order('created_at', { ascending: false });
-            if (newOrders) setOrders(newOrders as any);
+            try {
+                const { data: newOrders } = await supabase.from('orders')
+                    .select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email)')
+                    .order('created_at', { ascending: false });
+                if (newOrders) setOrders(newOrders as any);
+            } catch (fallbackError) {
+                console.error('[Orders] Fallback query also failed:', fallbackError);
+                // Continue without refreshing orders - at least the order was created
+            }
         }
 
         return true;
