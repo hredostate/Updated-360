@@ -220,6 +220,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     }
 }
 
+// Constants
+const AI_RATE_LIMIT_COOLDOWN_MS = 120000; // 2 minutes
+
 const App: React.FC = () => {
     const [session, setSession] = useState<Session | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | StudentProfile | null | undefined>(undefined);
@@ -281,11 +284,21 @@ const App: React.FC = () => {
     // Rate limit tracking
     const [aiRateLimitCooldown, setAiRateLimitCooldown] = useState<number | null>(null);
     const aiRateLimitUntil = useRef<number | null>(null);
+    const aiCooldownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const userProfileRef = useRef<UserProfile | StudentProfile | null | undefined>(undefined);
     useEffect(() => {
         userProfileRef.current = userProfile;
     }, [userProfile]);
+
+    // Cleanup AI cooldown timer on unmount
+    useEffect(() => {
+        return () => {
+            if (aiCooldownTimerRef.current) {
+                clearTimeout(aiCooldownTimerRef.current);
+            }
+        };
+    }, []);
 
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [reports, setReports] = useState<ReportRecord[]>([]);
@@ -420,15 +433,30 @@ const App: React.FC = () => {
     };
 
     // Helper to set AI rate limit cooldown
-    const setAiCooldown = (durationMs: number = 120000) => { // Default 2 minutes
+    const setAiCooldown = (durationMs: number = AI_RATE_LIMIT_COOLDOWN_MS) => {
+        // Validate duration
+        if (durationMs <= 0) {
+            console.warn('AI cooldown duration must be positive, using default');
+            durationMs = AI_RATE_LIMIT_COOLDOWN_MS;
+        }
+        
         const until = Date.now() + durationMs;
         aiRateLimitUntil.current = until;
         setAiRateLimitCooldown(durationMs);
         
+        // Clear any existing timeout
+        if (aiCooldownTimerRef.current) {
+            clearTimeout(aiCooldownTimerRef.current);
+        }
+        
         // Clear cooldown after duration
-        setTimeout(() => {
-            aiRateLimitUntil.current = null;
-            setAiRateLimitCooldown(null);
+        aiCooldownTimerRef.current = setTimeout(() => {
+            // Only clear if this is still the active timer
+            if (aiCooldownTimerRef.current) {
+                aiRateLimitUntil.current = null;
+                setAiRateLimitCooldown(null);
+                aiCooldownTimerRef.current = null;
+            }
         }, durationMs);
     };
 
@@ -1272,7 +1300,7 @@ const App: React.FC = () => {
         } catch (e: any) { 
             console.error("At-risk student analysis failed:", e);
             if (isRateLimitError(e)) {
-                setAiCooldown(120000); // 2 minute cooldown
+                setAiCooldown(); // Use default cooldown
                 addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             }
         }
@@ -1300,7 +1328,7 @@ const App: React.FC = () => {
         } catch (e: any) { 
             console.error("Task suggestion generation failed:", e);
             if (isRateLimitError(e)) {
-                setAiCooldown(120000); // 2 minute cooldown
+                setAiCooldown(); // Use default cooldown
                 addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             }
         }
@@ -2328,7 +2356,7 @@ const App: React.FC = () => {
         } catch (e: any) {
             console.error('Generate awards error:', e);
             if (isRateLimitError(e)) {
-                setAiCooldown(120000); // 2 minute cooldown
+                setAiCooldown(); // Use default cooldown
                 addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             } else {
                 addToast('Failed to generate awards. Please try again.', 'error');
@@ -2338,6 +2366,13 @@ const App: React.FC = () => {
 
     const handleGenerateStudentInsight = useCallback(async (studentId: number): Promise<any | null> => {
         if (!aiClient) return null;
+        
+        // Check if AI is in cooldown
+        if (isAiInCooldown()) {
+            addToast('AI service is cooling down. Please try again in a few minutes.', 'warning');
+            return null;
+        }
+        
         try {
             const student = students.find(s => s.id === studentId);
             if (!student) return null;
@@ -2366,6 +2401,7 @@ const App: React.FC = () => {
         } catch (e: any) {
             console.error('Generate insight error:', e);
             if (isRateLimitError(e)) {
+                setAiCooldown(); // Use default cooldown
                 addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             } else {
                 addToast('Failed to generate student insight. Please try again.', 'error');
