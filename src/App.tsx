@@ -3792,9 +3792,10 @@ const App: React.FC = () => {
             } else {
                 addToast('Failed to save social links.', 'error');
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Error saving social links:', e);
-            addToast(`Failed to save social links: ${e.message}`, 'error');
+            const errorMessage = e instanceof Error ? e.message : String(e);
+            addToast(`Failed to save social links: ${errorMessage}`, 'error');
         }
     }, [userProfile, schoolSettings, handleUpdateSchoolSettings, addToast, setSocialAccounts]);
 
