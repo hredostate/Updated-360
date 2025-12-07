@@ -840,7 +840,7 @@ const App: React.FC = () => {
                             supabase.from('teacher_shifts').select('*'),
                             supabase.from('assessment_structures').select('*'),
                             supabase.from('teaching_entities').select('*, teacher:user_profiles!user_id(name), class:classes(name), arm:arms(name), subject:subjects(name))'),
-                            supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles(name, email), notes:order_notes(*, author:user_profiles(name))').order('created_at', { ascending: false }),
+                            supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email), notes:order_notes(*, author:user_profiles!author_id(name))').order('created_at', { ascending: false }),
                         ];
                         
                         // Use Promise.allSettled to allow partial failure
@@ -3040,6 +3040,74 @@ const App: React.FC = () => {
         }
     }, [addToast]);
 
+    const handleCreateClassAssignment = useCallback(async (
+        assignmentData: { teacher_user_id: string; subject_id: number; class_id: number; arm_id: number | null },
+        groupData: { name: string; description: string; group_type: 'class_teacher' | 'subject_teacher' }
+    ): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        const staffProfile = userProfile as UserProfile;
+        
+        try {
+            // Create teaching assignment
+            const { data: assignment, error: assignmentError } = await Offline.insert('teaching_assignments', {
+                ...assignmentData,
+                school_id: staffProfile.school_id
+            });
+            
+            if (assignmentError || !assignment) {
+                addToast(`Error creating assignment: ${assignmentError?.message || 'Unknown error'}`, 'error');
+                return false;
+            }
+            
+            // Create class group linked to the teaching assignment
+            const { error: groupError } = await Offline.insert('class_groups', {
+                ...groupData,
+                teaching_entity_id: assignment.id,
+                school_id: staffProfile.school_id,
+                created_by: staffProfile.id
+            });
+            
+            if (groupError) {
+                addToast(`Error creating class group: ${groupError.message}`, 'error');
+                return false;
+            }
+            
+            // Refresh data
+            const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))');
+            if (data) {
+                setClassGroups(data);
+            }
+            
+            addToast('Class assignment created successfully.', 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error creating class assignment: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast]);
+
+    const handleDeleteClassAssignment = useCallback(async (groupId: number): Promise<boolean> => {
+        try {
+            const { error } = await Offline.del('class_groups', { id: groupId });
+            if (error) {
+                addToast(`Error deleting class assignment: ${error.message}`, 'error');
+                return false;
+            }
+            
+            // Refresh class groups
+            const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))');
+            if (data) {
+                setClassGroups(data);
+            }
+            
+            addToast('Class assignment deleted successfully.', 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error deleting class assignment: ${error.message}`, 'error');
+            return false;
+        }
+    }, [addToast]);
+
     const handleAddPolicySnippet = useCallback(async (content: string) => {
         if (!userProfile) return;
         const authorName = 'name' in userProfile ? userProfile.name : (userProfile as StudentProfile).full_name;
@@ -3299,7 +3367,7 @@ const App: React.FC = () => {
         }
         
         // Refresh orders
-        const { data: newOrders } = await supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles(name, email), notes:order_notes(*, author:user_profiles(name))').order('created_at', { ascending: false });
+        const { data: newOrders } = await supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email), notes:order_notes(*, author:user_profiles!author_id(name))').order('created_at', { ascending: false });
         if (newOrders) setOrders(newOrders as any);
 
         return true;
