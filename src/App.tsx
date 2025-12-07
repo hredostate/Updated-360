@@ -287,15 +287,16 @@ const App: React.FC = () => {
     const [hash, setHash] = useState(window.location.hash);
 
     // Debug mode support (can be enabled via localStorage.setItem('debug_mode', 'true'))
-    const [debugMode] = useState(() => localStorage.getItem('debug_mode') === 'true');
+    // Using useRef to avoid re-renders when checking debug mode
+    const debugMode = useRef(localStorage.getItem('debug_mode') === 'true');
 
     // Debug logging helper
     const debugLog = useCallback((message: string, ...args: any[]) => {
-        if (debugMode) {
+        if (debugMode.current) {
             const timestamp = new Date().toISOString();
             console.log(`[${timestamp}] ${message}`, ...args);
         }
-    }, [debugMode]);
+    }, []);
 
     // Rate limit tracking
     const [aiRateLimitCooldown, setAiRateLimitCooldown] = useState<number | null>(null);
@@ -1115,7 +1116,7 @@ const App: React.FC = () => {
         sessionStorage.removeItem('sg360_reload_lock');
 
         // Log debug mode status
-        if (debugMode) {
+        if (debugMode.current) {
             console.log('%c[DEBUG MODE] Debug logging is enabled', 'color: #10b981; font-weight: bold; font-size: 14px;');
             console.log('%cTo disable: localStorage.removeItem("debug_mode")', 'color: #6b7280; font-size: 12px;');
         } else {
@@ -4602,8 +4603,8 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                         fetchData(session.user, true);
                     }
                 }}
-                debugMode={debugMode}
-                debugInfo={debugMode ? {
+                debugMode={debugMode.current}
+                debugInfo={debugMode.current ? {
                     timestamp: new Date().toISOString(),
                     authState: session ? 'authenticated' : 'not authenticated',
                     error: profileLoadError || undefined

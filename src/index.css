@@ -27,6 +27,11 @@ html, body, #root {
   20%, 40%, 60%, 80% { transform: translateX(4px); }
 }
 
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 .animate-fade-in {
   animation: fade-in 0.4s ease-out forwards;
 }
@@ -37,6 +42,10 @@ html, body, #root {
 
 .animate-shake {
   animation: shake 0.4s ease-in-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
 
 body {

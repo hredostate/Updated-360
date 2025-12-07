@@ -82,11 +82,10 @@ const LoadingState: React.FC<LoadingStateProps> = ({
         {/* Progress bar */}
         <div className="mb-6">
           <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div 
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
+            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out"
               style={{ width: `${getProgressPercentage()}%` }}
             >
-              <div className="absolute top-0 right-0 h-full w-20 bg-gradient-to-r from-transparent to-white opacity-30 animate-shimmer"></div>
+              <div className="absolute top-0 right-0 h-full w-20 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-slate-400/30 animate-shimmer"></div>
             </div>
           </div>
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
@@ -130,23 +129,6 @@ const LoadingState: React.FC<LoadingStateProps> = ({
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer {
-          animation: shimmer 2s infinite;
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-in;
-        }
-      `}</style>
     </div>
   );
 };
