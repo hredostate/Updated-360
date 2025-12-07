@@ -3426,6 +3426,7 @@ const App: React.FC = () => {
 
     const handleSubmitScoresForReview = useCallback(async (assignmentId: number): Promise<boolean> => {
         if (!userProfile || userType !== 'staff') return false;
+        const staffProfile = userProfile as UserProfile;
         
         try {
             const { error } = await Offline.update('teaching_assignments', 
@@ -3438,10 +3439,11 @@ const App: React.FC = () => {
                 return false;
             }
             
-            // Refresh academic assignments
+            // Refresh academic assignments for the current school
             const { data: refreshedAssignments } = await supabase
                 .from('teaching_assignments')
-                .select('*, term:terms(*), academic_class:academic_classes(*, assessment_structure:assessment_structures(*)), teacher:user_profiles!teacher_user_id(*)');
+                .select('*, term:terms(*), academic_class:academic_classes(*, assessment_structure:assessment_structures(*)), teacher:user_profiles!teacher_user_id(*)')
+                .eq('school_id', staffProfile.school_id);
             
             if (refreshedAssignments) setAcademicAssignments(refreshedAssignments as any);
             
