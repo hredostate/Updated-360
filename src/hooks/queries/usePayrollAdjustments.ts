@@ -14,6 +14,6 @@ export const usePayrollAdjustments = (userId: string, enabled = true) => {
       if (error) throw error;
       return data || [];
     },
-    enabled: enabled && !!userId,
+    enabled: enabled && !!userId && userId.trim() !== '',
   });
 };

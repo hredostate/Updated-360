@@ -29,6 +29,6 @@ export const useStudent = (studentId: number, enabled = true) => {
       if (error) throw error;
       return data;
     },
-    enabled: enabled && !!studentId,
+    enabled: enabled && studentId != null && studentId > 0,
   });
 };

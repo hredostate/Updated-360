@@ -14,7 +14,7 @@ export const useLeaveRequests = (userId: string, enabled = true) => {
       if (error) throw error;
       return data || [];
     },
-    enabled: enabled && !!userId,
+    enabled: enabled && !!userId && userId.trim() !== '',
   });
 };
 
@@ -31,8 +31,11 @@ export const useCreateLeaveRequest = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['leaveRequests'] });
+    onSuccess: (data) => {
+      // Invalidate the specific user's leave requests
+      if (data?.requester_id) {
+        queryClient.invalidateQueries({ queryKey: ['leaveRequests', data.requester_id] });
+      }
     },
   });
 };
