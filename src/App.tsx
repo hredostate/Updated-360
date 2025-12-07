@@ -2172,6 +2172,76 @@ const App: React.FC = () => {
         return true;
     }, [addToast]);
 
+    // Constants for AI award generation
+    const AI_AWARDS_ANALYSIS_RECORD_LIMIT = 20;
+    const AI_AWARDS_GENERATION_COUNT = 3;
+
+    const handleGenerateStudentAwards = useCallback(async (): Promise<void> => {
+        if (!userProfile || !aiClient) return;
+        try {
+            // AI Logic: Generate awards based on positive behavior records
+            const prompt = `Analyze positive behavior records: ${JSON.stringify(positiveRecords.slice(0, AI_AWARDS_ANALYSIS_RECORD_LIMIT))}. Generate ${AI_AWARDS_GENERATION_COUNT} awards. JSON: [{student_id, award_type, reason}]`;
+            const res = await aiClient.models.generateContent({ 
+                model: 'gemini-2.5-flash', 
+                contents: prompt, 
+                config: { responseMimeType: 'application/json' } 
+            });
+            
+            if (res) {
+                const awards = extractAndParseJson<any[]>(textFromGemini(res));
+                if (awards && Array.isArray(awards)) {
+                    const { error } = await supabase.from('student_awards').insert(
+                        awards.map((a: any) => ({ ...a, school_id: userProfile.school_id }))
+                    );
+                    if (error) {
+                        addToast('Failed to save awards.', 'error');
+                    } else {
+                        addToast('Student awards generated successfully.', 'success');
+                        if (session?.user) fetchData(session.user, true);
+                    }
+                }
+            }
+        } catch (e: any) {
+            console.error('Generate awards error:', e);
+            addToast('Failed to generate awards.', 'error');
+        }
+    }, [userProfile, aiClient, positiveRecords, addToast, session, fetchData]);
+
+    const handleGenerateStudentInsight = useCallback(async (studentId: number): Promise<any | null> => {
+        if (!aiClient) return null;
+        try {
+            const student = students.find(s => s.id === studentId);
+            if (!student) return null;
+
+            const studentData = {
+                profile: student,
+                reports: reports.filter(r => r.student_id === studentId),
+                positiveRecords: positiveRecords.filter(p => p.student_id === studentId),
+            };
+
+            const prompt = `Analyze this student's data and provide insights: ${JSON.stringify(studentData)}. Return JSON with fields: strengths, areas_for_improvement, recommendations.`;
+            const res = await aiClient.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: { responseMimeType: 'application/json' }
+            });
+
+            if (res) {
+                const insight = extractAndParseJson<any>(textFromGemini(res));
+                if (insight) {
+                    addToast('Student insight generated.', 'success');
+                    return insight;
+                }
+            }
+            return null;
+        } catch (e: any) {
+            console.error('Generate insight error:', e);
+            addToast('Failed to generate student insight.', 'error');
+            return null;
+        }
+    }, [aiClient, students, reports, positiveRecords, addToast]);
+
+
     // Lock academic assignment scores (for Result Manager)
     const handleLockScores = useCallback(async (assignmentId: number): Promise<boolean> => {
         try {

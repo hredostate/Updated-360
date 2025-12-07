@@ -1,19 +1,17 @@
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { cache, uploadStore, conflictsStore } from './db';
 import { enqueue, drain, QueuedItem } from './queue';
+import { supabase as supabaseClient } from '../services/supabaseClient';
 
 export { cache };
 
-// 1. Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key must be provided in environment variables.');
+// Reuse the Supabase client from supabaseClient.ts to avoid multiple GoTrueClient instances
+// If supabaseClient is null (env vars missing), operations will fail gracefully
+if (!supabaseClient) {
+  throw new Error('Supabase client not initialized. Check environment variables.');
 }
-
-export const supa: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+export const supa: SupabaseClient = supabaseClient;
 
 export interface Conflict {
   key: string; // e.g., 'attendance_records-123'
