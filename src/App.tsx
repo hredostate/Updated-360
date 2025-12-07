@@ -272,6 +272,9 @@ const App: React.FC = () => {
     const [booting, setBooting] = useState(true);
     const lastFetchedUserId = useRef<string | null>(null);
     const [dbError, setDbError] = useState<string | null>(null);
+    const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+    const [isProfileLoading, setIsProfileLoading] = useState(false);
+    const profileLoadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [hash, setHash] = useState(window.location.hash);
 
