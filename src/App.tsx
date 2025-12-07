@@ -2172,11 +2172,15 @@ const App: React.FC = () => {
         return true;
     }, [addToast]);
 
+    // Constants for AI award generation
+    const AI_AWARDS_ANALYSIS_RECORD_LIMIT = 20;
+    const AI_AWARDS_GENERATION_COUNT = 3;
+
     const handleGenerateStudentAwards = useCallback(async (): Promise<void> => {
         if (!userProfile || !aiClient) return;
         try {
             // AI Logic: Generate awards based on positive behavior records
-            const prompt = `Analyze positive behavior records: ${JSON.stringify(positiveRecords.slice(0, 20))}. Generate 3 awards. JSON: [{student_id, award_type, reason}]`;
+            const prompt = `Analyze positive behavior records: ${JSON.stringify(positiveRecords.slice(0, AI_AWARDS_ANALYSIS_RECORD_LIMIT))}. Generate ${AI_AWARDS_GENERATION_COUNT} awards. JSON: [{student_id, award_type, reason}]`;
             const res = await aiClient.models.generateContent({ 
                 model: 'gemini-2.5-flash', 
                 contents: prompt, 

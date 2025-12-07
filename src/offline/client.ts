@@ -7,7 +7,11 @@ import { supabase as supabaseClient } from '../services/supabaseClient';
 export { cache };
 
 // Reuse the Supabase client from supabaseClient.ts to avoid multiple GoTrueClient instances
-export const supa: SupabaseClient = supabaseClient!;
+// If supabaseClient is null (env vars missing), operations will fail gracefully
+if (!supabaseClient) {
+  throw new Error('Supabase client not initialized. Check environment variables.');
+}
+export const supa: SupabaseClient = supabaseClient;
 
 export interface Conflict {
   key: string; // e.g., 'attendance_records-123'
