@@ -28,10 +28,11 @@ const SingleToast: React.FC<SingleToastProps> = ({ id, message, type, onClose })
   const typeStyles = {
     success: { icon: '✅', bar: 'bg-green-500' },
     error: { icon: '❌', bar: 'bg-red-500' },
-    info: { icon: 'ℹ️', bar: 'bg-blue-500' }
+    info: { icon: 'ℹ️', bar: 'bg-blue-500' },
+    warning: { icon: '⚠️', bar: 'bg-yellow-500' }
   };
 
-  const { icon, bar } = typeStyles[type];
+  const { icon, bar } = typeStyles[type] || typeStyles.info;
 
   return (
     <div className={`${baseClasses} ${transitionClasses}`} role="alert">
