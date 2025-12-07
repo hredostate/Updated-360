@@ -1,6 +1,6 @@
 
-import type { RoleTitle } from './types';
-import { StudentStatus } from './types';
+import type { RoleTitle } from '../types';
+import { StudentStatus } from '../types';
 
 export const ALL_PERMISSIONS: string[] = [
   'access-ai-assistant',

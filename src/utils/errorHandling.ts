@@ -64,7 +64,7 @@ export const handleApiError = (
     if (error instanceof Error) {
         message = error.message;
     } else if (typeof error === 'object' && error !== null && 'message' in error) {
-        message = String((error as any).message);
+        message = String((error as { message: unknown }).message);
     }
     
     // Handle specific error patterns
@@ -127,7 +127,7 @@ export const showWarning = (
  * @returns true if all fields are valid, false otherwise
  */
 export const validateRequiredFields = (
-    fields: Record<string, any>,
+    fields: Record<string, string | number | boolean | null | undefined>,
     addToast: AddToastFunction
 ): boolean => {
     const emptyFields = Object.entries(fields)
