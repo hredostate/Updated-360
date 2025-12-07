@@ -278,6 +278,10 @@ const App: React.FC = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [hash, setHash] = useState(window.location.hash);
 
+    // Rate limit tracking
+    const [aiRateLimitCooldown, setAiRateLimitCooldown] = useState<number | null>(null);
+    const aiRateLimitUntil = useRef<number | null>(null);
+
     const userProfileRef = useRef<UserProfile | StudentProfile | null | undefined>(undefined);
     useEffect(() => {
         userProfileRef.current = userProfile;
@@ -405,6 +409,27 @@ const App: React.FC = () => {
         );
         
         return has429Status || hasRateLimitMessage;
+    };
+
+    // Helper to check if AI is currently in cooldown
+    const isAiInCooldown = (): boolean => {
+        if (aiRateLimitUntil.current && Date.now() < aiRateLimitUntil.current) {
+            return true;
+        }
+        return false;
+    };
+
+    // Helper to set AI rate limit cooldown
+    const setAiCooldown = (durationMs: number = 120000) => { // Default 2 minutes
+        const until = Date.now() + durationMs;
+        aiRateLimitUntil.current = until;
+        setAiRateLimitCooldown(durationMs);
+        
+        // Clear cooldown after duration
+        setTimeout(() => {
+            aiRateLimitUntil.current = null;
+            setAiRateLimitCooldown(null);
+        }, durationMs);
     };
 
     const handleLogout = useCallback(async () => {
@@ -760,7 +785,7 @@ const App: React.FC = () => {
                             supabase.from('team_feedback').select('*'),
                             supabase.from('curriculum').select('*'),
                             supabase.from('curriculum_weeks').select('*'),
-                            supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name), subject:subjects(name))').eq('school_id', sp.school_id),
+                            supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))').eq('school_id', sp.school_id),
                             supabase.from('school_config').select('*').eq('school_id', sp.school_id).limit(1).maybeSingle(),
                             supabase.from('terms').select('*'),
                             supabase.from('academic_classes').select('*, assessment_structure:assessment_structures(*)'),
@@ -786,7 +811,7 @@ const App: React.FC = () => {
                             supabase.from('teacher_shifts').select('*'),
                             supabase.from('assessment_structures').select('*'),
                             supabase.from('teaching_entities').select('*, teacher:user_profiles!user_id(name), class:classes(name), arm:arms(name), subject:subjects(name))'),
-                            supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles!user_id(name, email), notes:order_notes(*, author:user_profiles!author_id(name))').order('created_at', { ascending: false }),
+                            supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles(name, email), notes:order_notes(*, author:user_profiles(name))').order('created_at', { ascending: false }),
                         ];
                         
                         // Use Promise.allSettled to allow partial failure
@@ -1209,6 +1234,13 @@ const App: React.FC = () => {
 
     const analyzeAtRiskStudents = useCallback(async (allStudents: Student[], allReports: ReportRecord[]) => {
         if (!aiClient || allStudents.length === 0 || allReports.length === 0) return;
+        
+        // Check if AI is in cooldown
+        if (isAiInCooldown()) {
+            console.log('AI in cooldown, skipping at-risk analysis');
+            return;
+        }
+        
         try {
             const studentReportMap: Record<number, string[]> = {};
             allReports.forEach(r => {
@@ -1240,13 +1272,21 @@ const App: React.FC = () => {
         } catch (e: any) { 
             console.error("At-risk student analysis failed:", e);
             if (isRateLimitError(e)) {
-                addToast('AI service is temporarily busy. Analysis will be retried later.', 'warning');
+                setAiCooldown(120000); // 2 minute cooldown
+                addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             }
         }
     }, [aiClient, addToast]);
 
     const generateTaskSuggestions = useCallback(async (allReports: ReportRecord[]) => {
         if (!aiClient || allReports.length === 0) return;
+        
+        // Check if AI is in cooldown
+        if (isAiInCooldown()) {
+            console.log('AI in cooldown, skipping task suggestions');
+            return;
+        }
+        
         try {
             const urgentReports = allReports.filter(r => (r.analysis?.urgency === 'Critical' || r.analysis?.urgency === 'High') && !tasks.some(t => t.report_id === r.id));
             if (urgentReports.length === 0) { setTaskSuggestions([]); return; }
@@ -1260,7 +1300,8 @@ const App: React.FC = () => {
         } catch (e: any) { 
             console.error("Task suggestion generation failed:", e);
             if (isRateLimitError(e)) {
-                addToast('AI service is temporarily busy. Task suggestions will be retried later.', 'warning');
+                setAiCooldown(120000); // 2 minute cooldown
+                addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             }
         }
     }, [aiClient, tasks, addToast]);
@@ -2254,6 +2295,13 @@ const App: React.FC = () => {
 
     const handleGenerateStudentAwards = useCallback(async (): Promise<void> => {
         if (!userProfile || !aiClient) return;
+        
+        // Check if AI is in cooldown
+        if (isAiInCooldown()) {
+            addToast('AI service is cooling down. Please try again in a few minutes.', 'warning');
+            return;
+        }
+        
         try {
             // AI Logic: Generate awards based on positive behavior records
             const prompt = `Analyze positive behavior records: ${JSON.stringify(positiveRecords.slice(0, AI_AWARDS_ANALYSIS_RECORD_LIMIT))}. Generate ${AI_AWARDS_GENERATION_COUNT} awards. JSON: [{student_id, award_type, reason}]`;
@@ -2280,6 +2328,7 @@ const App: React.FC = () => {
         } catch (e: any) {
             console.error('Generate awards error:', e);
             if (isRateLimitError(e)) {
+                setAiCooldown(120000); // 2 minute cooldown
                 addToast('AI service is temporarily busy. Please try again in a few minutes.', 'warning');
             } else {
                 addToast('Failed to generate awards. Please try again.', 'error');
@@ -2790,7 +2839,7 @@ const App: React.FC = () => {
         
         // Refresh
         // Updated query to fetch teaching_assignments
-        const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name), subject:subjects(name))').eq('id', groupId).single();
+        const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))').eq('id', groupId).single();
         if (data) {
              setClassGroups(prev => prev.map(g => g.id === groupId ? data : g));
         }
@@ -2798,6 +2847,59 @@ const App: React.FC = () => {
         return true;
     }, [addToast]);
 
+    const handleSaveAttendanceSchedule = useCallback(async (schedule: Partial<AttendanceSchedule>): Promise<AttendanceSchedule | null> => {
+        if (schedule.id) {
+            // Update existing
+            const { error } = await Offline.update('attendance_schedules', schedule, { id: schedule.id });
+            if (error) {
+                addToast(`Error updating schedule: ${error.message}`, 'error');
+                return null;
+            }
+            addToast('Schedule updated.', 'success');
+            return schedule as AttendanceSchedule;
+        } else {
+            // Create new
+            const { data, error } = await Offline.insert('attendance_schedules', schedule);
+            if (error) {
+                addToast(`Error creating schedule: ${error.message}`, 'error');
+                return null;
+            }
+            addToast('Schedule created.', 'success');
+            return data;
+        }
+    }, [addToast]);
+
+    const handleDeleteAttendanceSchedule = useCallback(async (scheduleId: number): Promise<boolean> => {
+        const { error } = await Offline.del('attendance_schedules', { id: scheduleId });
+        if (error) {
+            addToast(`Error deleting schedule: ${error.message}`, 'error');
+            return false;
+        }
+        addToast('Schedule deleted.', 'success');
+        return true;
+    }, [addToast]);
+
+    const handleSaveAttendanceRecord = useCallback(async (record: Partial<AttendanceRecord>): Promise<boolean> => {
+        if (record.id) {
+            // Update existing
+            const { error } = await Offline.update('attendance_records', record, { id: record.id });
+            if (error) {
+                addToast(`Error updating attendance: ${error.message}`, 'error');
+                return false;
+            }
+            addToast('Attendance updated.', 'success');
+            return true;
+        } else {
+            // Create new
+            const { error } = await Offline.insert('attendance_records', record);
+            if (error) {
+                addToast(`Error recording attendance: ${error.message}`, 'error');
+                return false;
+            }
+            addToast('Attendance recorded.', 'success');
+            return true;
+        }
+    }, [addToast]);
 
     const handleAddPolicySnippet = useCallback(async (content: string) => {
         if (!userProfile) return;
@@ -3058,7 +3160,7 @@ const App: React.FC = () => {
         }
         
         // Refresh orders
-        const { data: newOrders } = await supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles!user_id(name, email), notes:order_notes(*, author:user_profiles!author_id(name))').order('created_at', { ascending: false });
+        const { data: newOrders } = await supabase.from('orders').select('*, items:order_items(*, inventory_item:inventory_items(name, image_url)), user:user_profiles(name, email), notes:order_notes(*, author:user_profiles(name))').order('created_at', { ascending: false });
         if (newOrders) setOrders(newOrders as any);
 
         return true;
