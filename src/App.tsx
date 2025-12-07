@@ -3040,6 +3040,14 @@ const App: React.FC = () => {
         }
     }, [addToast]);
 
+    // Helper function to refresh class groups data
+    const refreshClassGroups = useCallback(async () => {
+        const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))');
+        if (data) {
+            setClassGroups(data);
+        }
+    }, []);
+
     const handleCreateClassAssignment = useCallback(async (
         assignmentData: { teacher_user_id: string; subject_id: number; class_id: number; arm_id: number | null },
         groupData: { name: string; description: string; group_type: 'class_teacher' | 'subject_teacher' }
@@ -3048,9 +3056,18 @@ const App: React.FC = () => {
         const staffProfile = userProfile as UserProfile;
         
         try {
-            // Create teaching assignment
+            // Look up subject name from subject_id
+            const subject = allSubjects.find(s => s.id === assignmentData.subject_id);
+            if (!subject) {
+                addToast('Invalid subject selected', 'error');
+                return false;
+            }
+            
+            // Create teaching assignment with correct field names
             const { data: assignment, error: assignmentError } = await Offline.insert('teaching_assignments', {
-                ...assignmentData,
+                teacher_user_id: assignmentData.teacher_user_id,
+                subject_name: subject.name,
+                academic_class_id: assignmentData.class_id,
                 school_id: staffProfile.school_id
             });
             
@@ -3073,10 +3090,7 @@ const App: React.FC = () => {
             }
             
             // Refresh data
-            const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))');
-            if (data) {
-                setClassGroups(data);
-            }
+            await refreshClassGroups();
             
             addToast('Class assignment created successfully.', 'success');
             return true;
@@ -3084,7 +3098,7 @@ const App: React.FC = () => {
             addToast(`Error creating class assignment: ${error.message}`, 'error');
             return false;
         }
-    }, [userProfile, userType, addToast]);
+    }, [userProfile, userType, addToast, allSubjects, refreshClassGroups]);
 
     const handleDeleteClassAssignment = useCallback(async (groupId: number): Promise<boolean> => {
         try {
@@ -3095,10 +3109,7 @@ const App: React.FC = () => {
             }
             
             // Refresh class groups
-            const { data } = await supabase.from('class_groups').select('*, members:class_group_members(*, schedules:attendance_schedules(*), records:attendance_records(*)), teaching_entity:teaching_assignments!teaching_entity_id(*, teacher:user_profiles!teacher_user_id(name), academic_class:academic_classes!academic_class_id(name))');
-            if (data) {
-                setClassGroups(data);
-            }
+            await refreshClassGroups();
             
             addToast('Class assignment deleted successfully.', 'success');
             return true;
@@ -3106,7 +3117,7 @@ const App: React.FC = () => {
             addToast(`Error deleting class assignment: ${error.message}`, 'error');
             return false;
         }
-    }, [addToast]);
+    }, [addToast, refreshClassGroups]);
 
     const handleAddPolicySnippet = useCallback(async (content: string) => {
         if (!userProfile) return;
