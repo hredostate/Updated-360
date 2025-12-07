@@ -431,9 +431,9 @@ const App: React.FC = () => {
     const isQuotaExhaustedError = (error: any): boolean => {
         const errorMessage = error?.message?.toLowerCase() || '';
         // Check for quota-specific indicators (more specific than rate limit)
-        return errorMessage.includes('quota') && errorMessage.includes('exceed') ||
+        return errorMessage.includes('quota exceeded') ||
                errorMessage.includes('billing') ||
-               errorMessage.includes('quota exhausted');
+               (errorMessage.includes('quota') && errorMessage.includes('limit'));
     };
 
     // Helper to check if AI is currently in cooldown
@@ -797,7 +797,12 @@ const App: React.FC = () => {
                                 const fallbackResult = await supabase.from('orders')
                                     .select('*, items:order_items(*, inventory_item:inventory_items!inventory_item_id(name, image_url)), user:user_profiles!user_id(name, email)')
                                     .order('created_at', { ascending: false });
-                                return { data: fallbackResult.data ?? [], error: fallbackResult.error };
+                                
+                                // Return data with null error if fallback succeeded, otherwise return the fallback error
+                                return { 
+                                    data: fallbackResult.data ?? [], 
+                                    error: fallbackResult.error ? fallbackResult.error : null 
+                                };
                             }
                         };
 
