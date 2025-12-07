@@ -417,8 +417,14 @@ const App: React.FC = () => {
             }
         });
 
-        return () => subscription.unsubscribe();
-    }, [addToast]);
+        return () => {
+            subscription.unsubscribe();
+            // Cleanup timeout on unmount
+            if (profileLoadTimeoutRef.current) {
+                clearTimeout(profileLoadTimeoutRef.current);
+            }
+        };
+    }, [addToast, fetchData]);
 
     // --- Realtime Updates ---
     useEffect(() => {
@@ -1132,6 +1138,11 @@ const App: React.FC = () => {
                             if (docs.improvement_plan) setImprovementPlan(docs.improvement_plan);
                         }
                         
+                        // Clear timeout and mark as loaded successfully
+                        if (profileLoadTimeoutRef.current) clearTimeout(profileLoadTimeoutRef.current);
+                        setIsProfileLoading(false);
+                        console.log('[Auth] Staff profile loaded successfully');
+                        
                         // Check for critical failures
                         const criticalIndices = [0, 1]; // Users, Reports
                         const criticalErrors = criticalIndices.filter(i => results[i].status === 'rejected').length;
@@ -1151,11 +1162,17 @@ const App: React.FC = () => {
             }
     
         } catch (error: any) {
-            console.error('Essential data fetching error:', error);
+            console.error('[Auth] Essential data fetching error:', error);
+            
+            // Clear timeout
+            if (profileLoadTimeoutRef.current) clearTimeout(profileLoadTimeoutRef.current);
+            setIsProfileLoading(false);
+            
              // Do NOT logout if it's a schema error, so the Setup screen can show
             if (error.message && (error.message.includes('relation') || error.message.includes('does not exist') || error.code === 'PGRST204')) {
                  setDbError(error.message);
             } else {
+                 setProfileLoadError(`Failed to load profile: ${error.message}`);
                  addToast(`Failed to fetch user data: ${error.message}. You will be logged out.`, 'error');
                  setUserProfile(null);
                  setUserType(null);
@@ -3081,6 +3098,53 @@ const App: React.FC = () => {
              return <DatabaseSetupError error={dbError} onLogout={handleLogout} />;
          }
          return <EnvironmentSetupError error={dbError} />;
+    }
+    
+    // Show profile loading error with retry/logout options
+    if (profileLoadError) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
+                <div className="max-w-md w-full mx-4 bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-red-100 dark:border-red-900/30">
+                    <div className="mb-4 text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-full inline-block">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Profile Loading Error</h2>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6">
+                        {profileLoadError}
+                    </p>
+                    
+                    <div className="space-y-3">
+                        <button 
+                            onClick={() => {
+                                setProfileLoadError(null);
+                                if (session?.user) {
+                                    console.log('[Auth] Retrying profile load...');
+                                    fetchData(session.user, true);
+                                }
+                            }}
+                            className="w-full px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+                        >
+                            Retry Loading
+                        </button>
+                        
+                        <button 
+                            onClick={handleLogout}
+                            className="w-full px-4 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                        >
+                            Logout and Try Again
+                        </button>
+                    </div>
+                    
+                    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                            If this problem persists, please contact support with the error details shown above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
     }
     
     if (!userProfile) {
