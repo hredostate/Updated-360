@@ -139,7 +139,10 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onBulkAddStudents, addToast
             <div className="space-y-6 animate-fade-in">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Bulk Data Uploader</h1>
-                    <p className="text-slate-600 dark:text-slate-300 mt-1">Create student accounts by uploading a CSV file. Existing students (matched by Admission No. or Name) will be reset.</p>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1">
+                        Create student accounts by uploading a CSV file. 
+                        Existing students (matched by Admission No. or Name) will have their accounts reset with new credentials.
+                    </p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 backdrop-blur-xl shadow-xl dark:border-slate-800/60 dark:bg-slate-900/40">
                     <h2 className="text-xl font-bold">Upload Student Data</h2>
