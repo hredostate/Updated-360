@@ -116,7 +116,7 @@ serve(async (req) => {
                         admission_number: student.admission_number,
                         initial_password: password,
                         school_id: student.school_id,
-                        skip_student_creation: existingStudent ? true : false // Skip if we'll update existing
+                        skip_student_creation: !!existingStudent // Skip if we'll update existing
                     }
                 });
 
@@ -176,10 +176,14 @@ serve(async (req) => {
                         console.error(`Failed to create student record for ${studentName}:`, insertError);
                     } else if (newStudent) {
                         // Update student_profiles to link student_record_id
-                        await supabaseAdmin
+                        const { error: profileLinkError } = await supabaseAdmin
                             .from('student_profiles')
                             .update({ student_record_id: newStudent.id })
                             .eq('id', newUser.user.id);
+                        
+                        if (profileLinkError) {
+                            console.error(`Failed to link student profile for ${studentName}:`, profileLinkError);
+                        }
                     }
                 }
 
