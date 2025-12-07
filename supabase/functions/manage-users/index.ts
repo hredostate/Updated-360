@@ -57,19 +57,50 @@ serve(async (req) => {
                     continue;
                 }
 
-                // Create new auth user - skip duplicate checking to avoid DB errors
+                // Check if student already exists by admission_number or name
+                let existingStudent = null;
+                
+                if (student.admission_number) {
+                    const { data } = await supabaseAdmin
+                        .from('students')
+                        .select('*')
+                        .eq('school_id', student.school_id)
+                        .eq('admission_number', student.admission_number)
+                        .maybeSingle();
+                    existingStudent = data;
+                }
+                
+                if (!existingStudent && studentName) {
+                    const { data } = await supabaseAdmin
+                        .from('students')
+                        .select('*')
+                        .eq('school_id', student.school_id)
+                        .ilike('name', studentName)
+                        .maybeSingle();
+                    existingStudent = data;
+                }
+
+                // If existing student already has an account, skip or reset
+                if (existingStudent?.user_id) {
+                    // Delete existing auth user to "reset" the account
+                    try {
+                        await supabaseAdmin.auth.admin.deleteUser(existingStudent.user_id);
+                        console.log(`Deleted existing auth account for ${studentName}`);
+                    } catch (e) {
+                        console.warn(`Could not delete existing account for ${studentName}:`, e);
+                    }
+                }
+
+                // Generate password and email
                 const password = `Student${Math.floor(1000 + Math.random() * 9000)}!`;
                 
-                // Safe generation of email prefix
+                // Use provided email or generate one with @school.com domain
                 const cleanName = studentName.toLowerCase().replace(/[^a-z0-9]/g, '');
                 const cleanAdmission = student.admission_number ? student.admission_number.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
-                
                 const emailPrefix = cleanAdmission || cleanName || 'student';
-                
-                // Generate pseudo-email if not provided - use timestamp + random to ensure uniqueness
                 const timestamp = Date.now().toString().slice(-6);
                 const random = Math.floor(Math.random() * 1000);
-                const email = student.email || `${emailPrefix}.${timestamp}${random}@school.local`;
+                const email = student.email || `${emailPrefix}.${timestamp}${random}@school.com`;
 
                 console.log(`Creating auth user with email: ${email}`);
 
@@ -84,17 +115,80 @@ serve(async (req) => {
                         arm_id: student.arm_id,
                         admission_number: student.admission_number,
                         initial_password: password,
-                        school_id: student.school_id
+                        school_id: student.school_id,
+                        skip_student_creation: !!existingStudent // Skip if we'll update existing
                     }
                 });
 
                 if (userError) {
                     console.error(`Auth user creation failed for ${studentName}:`, userError);
                     results.push({ name: studentName, status: 'Failed', error: userError.message });
-                } else {
-                    console.log(`Successfully created auth user for ${studentName}, ID: ${newUser.user.id}`);
-                    results.push({ name: studentName, email: email, password: password, status: 'Success' });
+                    continue;
                 }
+
+                console.log(`Successfully created auth user for ${studentName}, ID: ${newUser.user.id}`);
+
+                // Link auth user to student record
+                if (existingStudent) {
+                    // Update existing student record with new user_id
+                    const { error: updateError } = await supabaseAdmin
+                        .from('students')
+                        .update({ 
+                            user_id: newUser.user.id,
+                            class_id: student.class_id || existingStudent.class_id,
+                            arm_id: student.arm_id || existingStudent.arm_id
+                        })
+                        .eq('id', existingStudent.id);
+                    
+                    if (updateError) {
+                        console.error(`Failed to update student record for ${studentName}:`, updateError);
+                    }
+
+                    // Update student_profiles to link student_record_id
+                    const { error: profileError } = await supabaseAdmin
+                        .from('student_profiles')
+                        .update({ student_record_id: existingStudent.id })
+                        .eq('id', newUser.user.id);
+                    
+                    if (profileError) {
+                        console.error(`Failed to update student profile for ${studentName}:`, profileError);
+                    }
+                } else {
+                    // Create new student record and link it
+                    const { data: newStudent, error: insertError } = await supabaseAdmin
+                        .from('students')
+                        .insert({
+                            name: studentName,
+                            admission_number: student.admission_number,
+                            school_id: student.school_id,
+                            class_id: student.class_id,
+                            arm_id: student.arm_id,
+                            email: email,
+                            user_id: newUser.user.id,
+                            status: 'Active',
+                            date_of_birth: student.date_of_birth,
+                            parent_phone_number_1: student.parent_phone_number_1
+                        })
+                        .select()
+                        .single();
+                    
+                    if (insertError) {
+                        console.error(`Failed to create student record for ${studentName}:`, insertError);
+                    } else if (newStudent) {
+                        // Update student_profiles to link student_record_id
+                        const { error: profileLinkError } = await supabaseAdmin
+                            .from('student_profiles')
+                            .update({ student_record_id: newStudent.id })
+                            .eq('id', newUser.user.id);
+                        
+                        if (profileLinkError) {
+                            console.error(`Failed to link student profile for ${studentName}:`, profileLinkError);
+                        }
+                    }
+                }
+
+                results.push({ name: studentName, email: email, password: password, status: 'Success' });
+                
             } catch (innerError: any) {
                 console.error(`Crash processing student ${student.name}:`, innerError);
                 results.push({ name: student.name || 'Unknown', status: 'Failed', error: `System Error: ${innerError.message}` });
