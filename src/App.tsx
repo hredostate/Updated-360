@@ -390,10 +390,18 @@ const App: React.FC = () => {
     // Helper function to check if error is a rate limit error
     const isRateLimitError = (error: any): boolean => {
         // Check for various rate limit error formats
-        return error?.message?.includes('429') || 
-               error?.status === 429 || 
-               error?.response?.status === 429 ||
-               error?.code === 429;
+        const has429Status = error?.status === 429 || 
+                             error?.response?.status === 429 ||
+                             error?.code === 429;
+        
+        // Check for rate limit related messages
+        const hasRateLimitMessage = error?.message && (
+            error.message.toLowerCase().includes('rate limit') ||
+            error.message.toLowerCase().includes('quota exceeded') ||
+            error.message.toLowerCase().includes('too many requests')
+        );
+        
+        return has429Status || hasRateLimitMessage;
     };
 
     const handleLogout = useCallback(async () => {
@@ -1718,6 +1726,7 @@ const App: React.FC = () => {
                 if (isRateLimitError(e)) {
                     // Silently skip analysis on rate limit for report submission
                     // Don't show toast here as it's not critical to report submission
+                    console.debug("AI rate limit hit during report submission - skipping analysis");
                 }
             }
         }
@@ -2228,6 +2237,7 @@ const App: React.FC = () => {
         // - Verify teacher attendance compliance
         // - Review policy adherence metrics
         // - Generate compliance report
+        console.warn("handleRunWeeklyComplianceCheck called - placeholder implementation, no actual checks performed");
         addToast('Feature not yet implemented. Compliance checks coming soon.', 'info');
     }, [addToast]);
 
