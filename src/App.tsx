@@ -791,6 +791,7 @@ const App: React.FC = () => {
 
             // --- PROCESS STAFF PROFILE ---
             if (staffProfile) {
+                console.log('[Auth] Processing staff profile...');
                 setUserProfile(staffProfile as UserProfile);
                 setUserType('staff');
                 lastFetchedUserId.current = user.id;
@@ -851,6 +852,7 @@ const App: React.FC = () => {
             } 
             // --- PROCESS STUDENT PROFILE ---
             else if (studentProfile) {
+                console.log('[Auth] Processing student profile...');
                 let className: string | null = null;
                 if (studentProfile.class_id) {
                     const { data: classData } = await supabase.from('classes').select('name').eq('id', studentProfile.class_id).maybeSingle();
@@ -909,12 +911,23 @@ const App: React.FC = () => {
                 setUserPermissions([]); 
                 const { data: studentReports } = await supabase.from('student_term_reports').select('*, term:terms(*)').eq('student_id', studentRecord.id).order('created_at', { ascending: false });
                 if (studentReports) setStudentTermReports(studentReports as any);
+                
+                // Clear timeout and mark as loaded successfully
+                if (profileLoadTimeoutRef.current) clearTimeout(profileLoadTimeoutRef.current);
+                setIsProfileLoading(false);
+                console.log('[Auth] Student profile loaded successfully');
                 setBooting(false);
                 return; 
             } else {
+                console.error('[Auth] No profile found for user');
                 setUserProfile(null);
                 setUserType(null);
+                
+                // Clear timeout
+                if (profileLoadTimeoutRef.current) clearTimeout(profileLoadTimeoutRef.current);
+                setIsProfileLoading(false);
                 setBooting(false);
+                
                 // Handle Database Schema Errors
                 if (staffProfileError?.message.includes('relation') || staffProfileError?.message.includes('does not exist') || studentProfileError?.message.includes('relation')) {
                     setDbError(staffProfileError?.message || studentProfileError?.message);
