@@ -24,6 +24,8 @@ interface StudentListViewProps {
   onBulkResetStrikes?: () => Promise<void>;
   onBulkDeleteAccounts?: (userIds: string[]) => Promise<{ success: boolean; deleted: number; total: number }>;
   onBulkRetrievePasswords?: (studentIds: number[]) => Promise<{ success: boolean; credentials?: CreatedCredential[] }>;
+  onDeleteStudent?: (studentId: number) => Promise<boolean>;
+  onBulkDeleteStudents?: (studentIds: number[]) => Promise<{ success: boolean; deleted: number; total: number }>;
 }
 
 // Simple modal to show credentials after bulk generation
@@ -74,7 +76,7 @@ const CredentialsModal: React.FC<{ results: CreatedCredential[]; onClose: () => 
 
 const StudentListView: React.FC<StudentListViewProps> = ({ 
     students, onAddStudent, onViewStudent, onAddPositive, onGenerateStudentAwards, userPermissions, 
-    onOpenCreateStudentAccountModal, allClasses, allArms, users, teachingAssignments, onBulkCreateStudentAccounts, onBulkResetStrikes, onBulkDeleteAccounts, onBulkRetrievePasswords
+    onOpenCreateStudentAccountModal, allClasses, allArms, users, teachingAssignments, onBulkCreateStudentAccounts, onBulkResetStrikes, onBulkDeleteAccounts, onBulkRetrievePasswords, onDeleteStudent, onBulkDeleteStudents
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -86,6 +88,7 @@ const StudentListView: React.FC<StudentListViewProps> = ({
   const [isResettingBulkStrikes, setIsResettingBulkStrikes] = useState(false);
   const [isDeletingAccounts, setIsDeletingAccounts] = useState(false);
   const [isRetrievingPasswords, setIsRetrievingPasswords] = useState(false);
+  const [isDeletingStudents, setIsDeletingStudents] = useState(false);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -298,6 +301,26 @@ const StudentListView: React.FC<StudentListViewProps> = ({
       }
   };
 
+  const handleBulkDeleteStudentsClick = async () => {
+      if (!onBulkDeleteStudents) return;
+      
+      const selectedCount = selectedIds.size;
+      
+      if (!window.confirm(`WARNING: You are about to PERMANENTLY DELETE ${selectedCount} student record(s). This will also delete their login accounts (if any), all associated reports, scores, and other data. This action CANNOT be undone!\n\nAre you sure you want to proceed?`)) {
+          return;
+      }
+      
+      // Double confirmation for safety
+      if (!window.confirm(`FINAL WARNING: ${selectedCount} students will be permanently removed from the system. Type OK to confirm.`)) {
+          return;
+      }
+      
+      setIsDeletingStudents(true);
+      await onBulkDeleteStudents(Array.from(selectedIds));
+      setIsDeletingStudents(false);
+      setSelectedIds(new Set()); // Clear selection
+  };
+
   const handleExportStudents = () => {
       const dataToExport = filteredStudents.map(s => ({
           'Name': s.name,
@@ -377,7 +400,7 @@ const StudentListView: React.FC<StudentListViewProps> = ({
                 <div className="flex gap-2">
                     <button 
                         onClick={handleBulkCreateAccounts} 
-                        disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords}
+                        disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords || isDeletingStudents}
                         className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                     >
                         {isGeneratingLogins ? <Spinner size="sm"/> : 'Generate Logins'}
@@ -385,7 +408,7 @@ const StudentListView: React.FC<StudentListViewProps> = ({
                     {onBulkRetrievePasswords && (
                         <button 
                             onClick={handleBulkRetrievePasswords} 
-                            disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords}
+                            disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords || isDeletingStudents}
                             className="px-4 py-1.5 bg-amber-600 text-white text-sm font-bold rounded-md hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2"
                             title="Retrieve passwords for selected students"
                         >
@@ -395,11 +418,21 @@ const StudentListView: React.FC<StudentListViewProps> = ({
                     {onBulkDeleteAccounts && (
                         <button 
                             onClick={handleBulkDeleteAccounts} 
-                            disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords}
+                            disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords || isDeletingStudents}
                             className="px-4 py-1.5 bg-red-700 text-white text-sm font-bold rounded-md hover:bg-red-800 disabled:opacity-50 flex items-center gap-2"
                             title="Delete login accounts for selected students"
                         >
                             {isDeletingAccounts ? <Spinner size="sm"/> : 'Delete Accounts'}
+                        </button>
+                    )}
+                    {onBulkDeleteStudents && (
+                        <button 
+                            onClick={handleBulkDeleteStudentsClick} 
+                            disabled={isGeneratingLogins || isDeletingAccounts || isRetrievingPasswords || isDeletingStudents}
+                            className="px-4 py-1.5 bg-red-900 text-white text-sm font-bold rounded-md hover:bg-red-950 disabled:opacity-50 flex items-center gap-2"
+                            title="Permanently delete selected students and all their data"
+                        >
+                            {isDeletingStudents ? <Spinner size="sm"/> : '🗑️ Delete Students'}
                         </button>
                     )}
                      <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 text-sm font-semibold rounded-md">Cancel</button>

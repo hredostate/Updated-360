@@ -1900,6 +1900,63 @@ const App: React.FC = () => {
         }
     }, [addToast]);
 
+    const handleDeleteStudent = useCallback(async (studentId: number): Promise<boolean> => {
+        try {
+            // First, if student has an auth account, delete it
+            const student = students.find(s => s.id === studentId);
+            if (student?.user_id) {
+                await supabase.functions.invoke('manage-users', {
+                    body: { action: 'delete_account', studentId: student.user_id }
+                });
+            }
+            
+            // Then delete the student record
+            const { error } = await supabase.from('students').delete().eq('id', studentId);
+            if (error) {
+                addToast(`Failed to delete student: ${error.message}`, 'error');
+                return false;
+            }
+            
+            // Update local state
+            setStudents(prev => prev.filter(s => s.id !== studentId));
+            addToast('Student deleted successfully.', 'success');
+            return true;
+        } catch (e: any) {
+            addToast(`Error: ${e.message}`, 'error');
+            return false;
+        }
+    }, [students, addToast]);
+
+    const handleBulkDeleteStudents = useCallback(async (studentIds: number[]): Promise<{ success: boolean; deleted: number; total: number }> => {
+        try {
+            // Get students with auth accounts
+            const studentsToDelete = students.filter(s => studentIds.includes(s.id));
+            const userIds = studentsToDelete.filter(s => s.user_id).map(s => s.user_id!);
+            
+            // Delete auth accounts first (if any)
+            if (userIds.length > 0) {
+                await supabase.functions.invoke('manage-users', {
+                    body: { action: 'bulk_delete', studentIds: userIds }
+                });
+            }
+            
+            // Delete student records
+            const { error } = await supabase.from('students').delete().in('id', studentIds);
+            if (error) {
+                addToast(`Failed to delete students: ${error.message}`, 'error');
+                return { success: false, deleted: 0, total: studentIds.length };
+            }
+            
+            // Update local state
+            setStudents(prev => prev.filter(s => !studentIds.includes(s.id)));
+            addToast(`Successfully deleted ${studentIds.length} student(s).`, 'success');
+            return { success: true, deleted: studentIds.length, total: studentIds.length };
+        } catch (e: any) {
+            addToast(`Error: ${e.message}`, 'error');
+            return { success: false, deleted: 0, total: studentIds.length };
+        }
+    }, [students, addToast]);
+
     // ... (Handlers for students, sips, calendar, etc.) ...
     
     const handleBulkAddStudents = useCallback(async (studentsData: any[]) => {
@@ -2996,6 +3053,8 @@ const App: React.FC = () => {
                     teachingAssignments={teachingEntities} 
                     onBulkCreateStudentAccounts={handleBulkCreateStudentAccounts}
                     onBulkDeleteAccounts={handleBulkDeleteStudentAccounts}
+                    onDeleteStudent={handleDeleteStudent}
+                    onBulkDeleteStudents={handleBulkDeleteStudents}
                 />;
             case VIEWS.CLASSES_ATTENDANCE:
                 return <ClassGroupManager 
@@ -3275,6 +3334,7 @@ const App: React.FC = () => {
                         onCreateAccount={handleCreateStudentAccount} 
                         onResetPassword={handleStudentPasswordReset}
                         onDeleteAccount={handleDeleteStudentAccount}
+                        onDeleteStudent={handleDeleteStudent}
                     />;
                 }
                  if (currentView.startsWith(`${VIEWS.TEACHER_SCORE_ENTRY}/`)) {

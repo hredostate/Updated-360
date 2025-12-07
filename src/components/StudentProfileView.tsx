@@ -4,7 +4,7 @@ import type { Student, ReportRecord, PositiveBehaviorRecord, StudentAward, UserP
 import { StudentStatus, ReportType } from '../types';
 import { STUDENT_STATUSES } from '../constants';
 import Spinner from './common/Spinner';
-import { WandIcon } from './common/icons';
+import { WandIcon, TrashIcon } from './common/icons';
 import { VIEWS } from '../constants';
 import ParentCommunicationModal from './ParentCommunicationModal';
 import { supa as supabase } from '../offline/client';
@@ -31,6 +31,7 @@ interface StudentProfileViewProps {
     onResetPassword?: (userId: string) => Promise<string | null>;
     onResetStrikes?: (studentId: number) => Promise<void>;
     onDeleteAccount?: (userId: string) => Promise<boolean>;
+    onDeleteStudent?: (studentId: number) => Promise<boolean>;
 }
 
 type ProfileTab = 'Overview' | 'Conduct' | 'Reports' | 'Term Reports' | 'Positive Behavior' | 'Spotlight Awards' | 'AI Insights';
@@ -56,7 +57,8 @@ const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     onCreateAccount,
     onResetPassword,
     onResetStrikes,
-    onDeleteAccount
+    onDeleteAccount,
+    onDeleteStudent
 }) => {
     const [activeTab, setActiveTab] = useState<ProfileTab>('Overview');
     const [insight, setInsight] = useState<AIProfileInsight | null>(null);
@@ -69,6 +71,7 @@ const StudentProfileView: React.FC<StudentProfileViewProps> = ({
     const [isResettingStrikes, setIsResettingStrikes] = useState(false);
     const [accountJustCreated, setAccountJustCreated] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [isDeletingStudent, setIsDeletingStudent] = useState(false);
 
     // Editing state
     const [isEditing, setIsEditing] = useState(false);
@@ -211,6 +214,26 @@ const StudentProfileView: React.FC<StudentProfileViewProps> = ({
             addToast("An error occurred while deleting the account.", "error");
         } finally {
             setIsDeletingAccount(false);
+        }
+    };
+
+    const handleDeleteStudentAction = async () => {
+        if (!onDeleteStudent) return;
+        
+        if (!window.confirm(`WARNING: You are about to PERMANENTLY DELETE ${student.name} from the system. This will remove all their data including reports, scores, and login credentials. This action CANNOT be undone!\n\nAre you sure?`)) {
+            return;
+        }
+        
+        if (!window.confirm(`FINAL CONFIRMATION: Delete ${student.name} permanently?`)) {
+            return;
+        }
+        
+        setIsDeletingStudent(true);
+        const success = await onDeleteStudent(student.id);
+        setIsDeletingStudent(false);
+        
+        if (success) {
+            onBack(); // Navigate back to roster after deletion
         }
     };
 
@@ -529,6 +552,19 @@ const StudentProfileView: React.FC<StudentProfileViewProps> = ({
                     )}
 
                     <button type="button" onClick={() => onAddPositive(student)} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Log Positive Behavior</button>
+                    
+                    {onDeleteStudent && canManageAccount && (
+                        <button
+                            type="button"
+                            onClick={handleDeleteStudentAction}
+                            disabled={isDeletingStudent}
+                            className="px-4 py-2 bg-red-700 text-white font-semibold rounded-lg hover:bg-red-800 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isDeletingStudent ? <Spinner size="sm" /> : <TrashIcon className="w-4 h-4" />}
+                            Delete Student
+                        </button>
+                    )}
+                    
                     <button type="button" onClick={onBack} className="px-4 py-2 bg-slate-500/20 text-slate-800 dark:text-white font-semibold rounded-lg hover:bg-slate-500/30">Back</button>
                 </div>
             </div>
