@@ -1200,6 +1200,14 @@ const App: React.FC = () => {
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
+    // Redirect authenticated users away from auth-only views
+    useEffect(() => {
+        const authOnlyViews = ['teacher-login', 'student-login', 'landing', 'public-ratings'];
+        if (session && authOnlyViews.includes(currentView)) {
+            setCurrentView(VIEWS.DASHBOARD);
+        }
+    }, [session, currentView]);
+
     // --- Handle AI Navigation ---
     const handleAINavigation = useCallback((context: NavigationContext) => {
         if (context.targetView === 'create_task_modal') {
@@ -4606,13 +4614,6 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
         if (currentView === 'teacher-login') return <LoginPage onNavigate={(view) => { if(view === 'landing') setCurrentView('landing'); else if (view === 'student-login') setCurrentView('student-login'); }} />;
         // Landing page default
         return <LandingPage onNavigate={(view) => setCurrentView(view)} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />;
-    }
-
-    // Redirect authenticated users away from auth-only views
-    const authOnlyViews = ['teacher-login', 'student-login', 'landing', 'public-ratings'];
-    if (authOnlyViews.includes(currentView)) {
-        setCurrentView(VIEWS.DASHBOARD);
-        return <div className="flex items-center justify-center h-screen"><Spinner size="lg" /></div>;
     }
 
     if (dbError) {
