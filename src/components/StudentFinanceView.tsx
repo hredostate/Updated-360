@@ -5,6 +5,7 @@ import type { Student, UserProfile, FeeItem, StudentInvoice, Term, BaseDataObjec
 import Spinner from './common/Spinner';
 import { BanknotesIcon, PlusCircleIcon, TrashIcon, EditIcon } from './common/icons';
 import DVAManager from './DVAManager';
+import FeesCsvManager from './FeesCsvManager';
 
 // --- Sub-components ---
 
@@ -584,6 +585,79 @@ const StudentFinanceView: React.FC<{
         addToast('Payment recorded successfully.', 'success');
     };
 
+    const handleImportFees = async (fees: Partial<FeeItem>[]) => {
+        const schoolId = userProfile.school_id;
+        
+        for (const fee of fees) {
+            const feeData = {
+                school_id: schoolId,
+                name: fee.name,
+                description: fee.description || '',
+                amount: Number(fee.amount),
+                is_compulsory: fee.is_compulsory === true || fee.is_compulsory === 'Yes' || fee.is_compulsory === 'yes',
+                allow_installments: fee.allow_installments === true || fee.allow_installments === 'Yes' || fee.allow_installments === 'yes',
+                priority: fee.priority ? Number(fee.priority) : 1,
+            };
+
+            // Check if fee with same name exists (update) or create new
+            const existing = feeItems.find(f => f.name.toLowerCase() === feeData.name?.toLowerCase());
+            if (existing) {
+                await supabase.from('fee_items').update(feeData).eq('id', existing.id);
+            } else {
+                await supabase.from('fee_items').insert(feeData);
+            }
+        }
+
+        // Refresh fee items
+        const { data } = await supabase.from('fee_items').select('*').eq('school_id', schoolId);
+        setFeeItems(data || []);
+    };
+
+    const handleImportInvoices = async (invoicesData: Partial<StudentInvoice>[]) => {
+        const schoolId = userProfile.school_id;
+        
+        for (const invData of invoicesData) {
+            // Find student by admission number or name
+            const admissionNumber = invData.student?.admission_number || (invData as any).admission_number;
+            const studentName = invData.student?.name || (invData as any).student_name;
+            
+            let student = null;
+            if (admissionNumber) {
+                student = propStudents.find(s => s.admission_number === admissionNumber);
+            } else if (studentName) {
+                student = propStudents.find(s => s.name.toLowerCase() === studentName.toLowerCase());
+            }
+
+            if (!student) continue; // Skip if student not found
+
+            const invoiceData = {
+                school_id: schoolId,
+                student_id: student.id,
+                term_id: invData.term_id || terms[0]?.id, // Use first term if not specified
+                invoice_number: invData.invoice_number || `INV-${Date.now()}-${student.id}`,
+                total_amount: Number(invData.total_amount),
+                amount_paid: Number(invData.amount_paid || 0),
+                status: invData.status || 'Unpaid',
+                due_date: invData.due_date,
+            };
+
+            // Check if invoice with same number exists (update) or create new
+            const existing = invoices.find(i => i.invoice_number === invoiceData.invoice_number);
+            if (existing) {
+                await supabase.from('student_invoices').update(invoiceData).eq('id', existing.id);
+            } else {
+                await supabase.from('student_invoices').insert(invoiceData);
+            }
+        }
+
+        // Refresh invoices
+        const { data } = await supabase.from('student_invoices')
+            .select('*, student:students(name, admission_number), line_items:invoice_line_items(*)')
+            .eq('school_id', schoolId)
+            .order('created_at', { ascending: false });
+        setInvoices(data || []);
+    };
+
     if (isLoading) return <div className="flex justify-center p-10"><Spinner size="lg" /></div>;
 
     return (
@@ -798,8 +872,23 @@ const StudentFinanceView: React.FC<{
                 )}
                 
                 {activeTab === 'fees' && (
-                    <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-4 rounded-xl border shadow-sm">
-                         <FeeItemManager feeItems={feeItems} classes={classes} terms={terms} onSave={handleSaveFee} onDelete={handleDeleteFee} />
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border shadow-sm">
+                            <FeeItemManager feeItems={feeItems} classes={classes} terms={terms} onSave={handleSaveFee} onDelete={handleDeleteFee} />
+                        </div>
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border shadow-sm">
+                            <h3 className="text-lg font-bold mb-4">Import / Export</h3>
+                            <FeesCsvManager
+                                feeItems={feeItems}
+                                invoices={invoices}
+                                students={propStudents}
+                                classes={classes}
+                                terms={terms}
+                                onImportFees={handleImportFees}
+                                onImportInvoices={handleImportInvoices}
+                                addToast={addToast}
+                            />
+                        </div>
                     </div>
                 )}
 
