@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import type { AcademicTeachingAssignment, AcademicClassStudent, ScoreEntry, UserProfile, Student, StudentTermReport, GradingScheme, SchoolConfig } from '../types';
 import Spinner from './common/Spinner';
-import { LockClosedIcon, CheckCircleIcon, WandIcon, GlobeIcon, UsersIcon } from './common/icons';
+import { LockClosedIcon, CheckCircleIcon, WandIcon, GlobeIcon, UsersIcon, PaintBrushIcon } from './common/icons';
 import { aiClient } from '../services/aiClient';
 import { textFromGemini } from '../utils/ai';
 import { supa as supabase } from '../offline/client';
@@ -36,6 +36,15 @@ const ResultManager: React.FC<ResultManagerProps> = ({
     const [isPublishing, setIsPublishing] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>('by-class');
     const [publishingClassId, setPublishingClassId] = useState<number | null>(null);
+    const [showDesignPicker, setShowDesignPicker] = useState(false);
+    const [selectedResultSheet, setSelectedResultSheet] = useState<string>('default');
+    
+    // Result sheet design options
+    const resultSheetOptions = [
+        { id: 'default', name: 'Default', description: 'Standard result sheet layout' },
+        { id: 'compact', name: 'Compact', description: 'Space-efficient layout' },
+        { id: 'detailed', name: 'Detailed', description: 'Comprehensive view with extra details' }
+    ];
 
     const assignmentsForTerm = useMemo(() => {
         if (!selectedTermId) return [];
