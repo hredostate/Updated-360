@@ -916,8 +916,11 @@ const App: React.FC = () => {
                         setBooting(false);
                         console.log('[Auth] Critical data loaded, showing dashboard...');
                         
-                        // Navigate to staff default view immediately
-                        setCurrentView(VIEWS.DASHBOARD);
+                        // Navigate to staff default view only if no hash is present
+                        const currentHash = decodeURIComponent(window.location.hash.substring(1) || '');
+                        if (!currentHash || currentHash.includes('access_token=') || currentHash.includes('error=')) {
+                            setCurrentView(VIEWS.DASHBOARD);
+                        }
                         
                         // Load background data (Phase 2) asynchronously
                         console.log('[Data Fetch] Phase 2: Loading background data...');
