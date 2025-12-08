@@ -39,9 +39,12 @@ Adds the `school_id` column to the `subjects` table with proper foreign key cons
 **When to run**: If you're getting the error "Could not find the 'school_id' column of 'subjects' in the schema cache" when creating or managing subjects.
 
 **What it does**:
+- Dynamically finds the first available school_id (doesn't hard-code assumptions)
+- Validates that at least one school exists before proceeding
 - Adds the `school_id` column if it doesn't exist
-- Sets existing subjects to use school_id = 1 (default school)
-- Adds foreign key constraint to schools table
+- Sets existing subjects to use the first available school_id
+- Makes column NOT NULL to enforce data integrity
+- Adds foreign key constraint to schools table with idempotency check
 - Notifies PostgREST to reload the schema cache
 
 ## How to Apply Migrations

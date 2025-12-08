@@ -18,9 +18,12 @@ The `subjects` table is defined with a `school_id` column in the main `database_
 ## Solution
 Created migration file `20250108_add_school_id_to_subjects.sql` that:
 - Checks if the `school_id` column exists before attempting to add it
+- Dynamically finds the first available school_id instead of hard-coding
+- Validates that at least one school exists before proceeding
 - Adds the column if it doesn't exist
-- Sets existing subjects to use `school_id = 1` (the default school)
-- Adds the foreign key constraint to the `schools` table
+- Sets existing subjects to use the first available school_id
+- Makes the column NOT NULL to enforce data integrity
+- Adds the foreign key constraint with existence check to ensure idempotency
 - Notifies PostgREST to reload the schema cache
 
 ## How to Apply the Fix
@@ -38,9 +41,10 @@ Created migration file `20250108_add_school_id_to_subjects.sql` that:
 # Navigate to your project directory
 cd /path/to/Updated-360
 
-# Apply the migration
+# Apply the migration (replace connection details with your actual values)
 psql -h your-db-host -U postgres -d postgres -f supabase/migrations/20250108_add_school_id_to_subjects.sql
 ```
+**Note:** Replace `your-db-host` with your actual Supabase database host from the project settings.
 
 ### Option 3: Manual Schema Cache Reload
 If you prefer to manually reload the schema cache after any schema changes, you can use:
