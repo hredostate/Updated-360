@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { GeneratedReport, ReportGenerationRequest, Student } from '../../types';
 import { generateReport } from '../../services/reportGenerator';
-import { FileText, Download, Edit, CheckCircle } from 'lucide-react';
+import { FileTextIcon, DownloadIcon, EditIcon, CheckCircleIcon } from '../common/icons';
 
 interface AutomatedReportWriterProps {
   students: Student[];
@@ -62,7 +62,7 @@ const AutomatedReportWriter: React.FC<AutomatedReportWriterProps> = ({ students 
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <FileText className="w-6 h-6" />
+          <FileTextIcon className="w-6 h-6" />
           Automated Report Writer
         </h2>
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -187,10 +187,10 @@ const AutomatedReportWriter: React.FC<AutomatedReportWriterProps> = ({ students 
                   </div>
                   <div className="flex gap-2">
                     <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                      <Edit className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <EditIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                     </button>
                     <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                      <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <DownloadIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                     </button>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ const AutomatedReportWriter: React.FC<AutomatedReportWriterProps> = ({ students 
                 {/* Strengths */}
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                   <h4 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <CheckCircleIcon className="w-5 h-5 text-green-600" />
                     Strengths
                   </h4>
                   <ul className="space-y-2">
@@ -302,7 +302,7 @@ const AutomatedReportWriter: React.FC<AutomatedReportWriterProps> = ({ students 
 
           {!loading && !generatedReport && (
             <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-12 text-center">
-              <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <FileTextIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
               <p className="text-slate-600 dark:text-slate-400 text-lg">
                 Configure settings and select a student to generate report
               </p>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { TimetableEntry, ScheduleOptimizationResult } from '../../types';
 import { optimizeSchedule, commonConstraints } from '../../services/scheduleOptimizer';
-import { Calendar, Clock, Users, CheckCircle, XCircle } from 'lucide-react';
+import { CalendarIcon, ClockIcon, UsersIcon, CheckCircleIcon, XCircleIcon } from '../common/icons';
 
 const SmartScheduler: React.FC = () => {
   const [optimizationResult, setOptimizationResult] = useState<ScheduleOptimizationResult | null>(null);
@@ -63,7 +63,7 @@ const SmartScheduler: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Calendar className="w-6 h-6" />
+            <CalendarIcon className="w-6 h-6" />
             Smart Schedule Optimizer
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -102,13 +102,13 @@ const SmartScheduler: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircleIcon className="w-5 h-5 text-green-600" />
                 Satisfied Constraints
               </h3>
               <ul className="space-y-2">
                 {optimizationResult.satisfiedConstraints.map((constraint, idx) => (
                   <li key={idx} className="text-sm text-slate-600 dark:text-slate-400 flex items-start">
-                    <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
+                    <CheckCircleIcon className="w-4 h-4 text-green-600 mr-2 flex-shrink-0 mt-0.5" />
                     {constraint}
                   </li>
                 ))}
@@ -117,14 +117,14 @@ const SmartScheduler: React.FC = () => {
 
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-600" />
+                <XCircleIcon className="w-5 h-5 text-red-600" />
                 Violated Constraints
               </h3>
               {optimizationResult.violatedConstraints.length > 0 ? (
                 <ul className="space-y-2">
                   {optimizationResult.violatedConstraints.map((constraint, idx) => (
                     <li key={idx} className="text-sm text-slate-600 dark:text-slate-400 flex items-start">
-                      <XCircle className="w-4 h-4 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                      <XCircleIcon className="w-4 h-4 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
                       {constraint}
                     </li>
                   ))}
@@ -140,7 +140,7 @@ const SmartScheduler: React.FC = () => {
           {/* Schedule Preview */}
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
             <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5" />
+              <ClockIcon className="w-5 h-5" />
               Generated Schedule ({optimizationResult.schedule.length} periods)
             </h3>
             <div className="overflow-x-auto">
@@ -226,7 +226,7 @@ const SmartScheduler: React.FC = () => {
 
       {!optimizationResult && !loading && (
         <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-12 text-center">
-          <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <CalendarIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <p className="text-slate-600 dark:text-slate-400 text-lg">
             Click "Generate Schedule" to optimize your timetable
           </p>

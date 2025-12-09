@@ -5,15 +5,15 @@ import PersonalizedLearningPath from './PersonalizedLearningPath';
 import SmartScheduler from './SmartScheduler';
 import AutomatedReportWriter from './AutomatedReportWriter';
 import { 
-  Activity, 
-  BookOpen, 
-  Calendar, 
-  FileText, 
-  TrendingUp, 
-  Users,
-  AlertCircle,
-  Brain
-} from 'lucide-react';
+  ActivityIcon, 
+  BookOpenIcon, 
+  CalendarIcon, 
+  FileTextIcon, 
+  TrendingUpIcon, 
+  UsersIcon,
+  AlertCircleIcon,
+  BrainIcon
+} from '../common/icons';
 
 interface PredictiveAnalyticsDashboardProps {
   students: Student[];
@@ -42,7 +42,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-            <Brain className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <BrainIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -86,7 +86,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Activity className="w-8 h-8 text-red-600 dark:text-red-400" />
+                  <ActivityIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
                   <span className="text-xs text-slate-500 dark:text-slate-400">This Month</span>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
@@ -99,7 +99,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
 
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <BookOpen className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                  <BookOpenIcon className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                   <span className="text-xs text-slate-500 dark:text-slate-400">This Month</span>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
@@ -112,7 +112,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
 
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  <CalendarIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
                   <span className="text-xs text-slate-500 dark:text-slate-400">Current</span>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
@@ -125,7 +125,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
 
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                  <FileTextIcon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                   <span className="text-xs text-slate-500 dark:text-slate-400">This Term</span>
                 </div>
                 <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
@@ -147,7 +147,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
                   onClick={() => setActiveTab('early-warning')}
                   className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-left"
                 >
-                  <Activity className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <ActivityIcon className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0" />
                   <div>
                     <div className="font-medium text-red-900 dark:text-red-300">
                       Analyze Student Risks
@@ -162,7 +162,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
                   onClick={() => setActiveTab('learning-paths')}
                   className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors text-left"
                 >
-                  <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                  <BookOpenIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                   <div>
                     <div className="font-medium text-indigo-900 dark:text-indigo-300">
                       Generate Learning Path
@@ -177,7 +177,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
                   onClick={() => setActiveTab('scheduler')}
                   className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-left"
                 >
-                  <Calendar className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  <CalendarIcon className="w-6 h-6 text-green-600 dark:text-green-400 flex-shrink-0" />
                   <div>
                     <div className="font-medium text-green-900 dark:text-green-300">
                       Optimize Schedule
@@ -192,7 +192,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
                   onClick={() => setActiveTab('reports')}
                   className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors text-left"
                 >
-                  <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                  <FileTextIcon className="w-6 h-6 text-purple-600 dark:text-purple-400 flex-shrink-0" />
                   <div>
                     <div className="font-medium text-purple-900 dark:text-purple-300">
                       Generate Report Comments
@@ -233,7 +233,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
             {/* Getting Started */}
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6">
               <div className="flex items-start gap-4">
-                <AlertCircle className="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-1" />
+                <AlertCircleIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-1" />
                 <div>
                   <h3 className="font-semibold text-indigo-900 dark:text-indigo-300 mb-2">
                     Getting Started with Predictive Analytics

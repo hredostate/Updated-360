@@ -5,7 +5,7 @@ import {
   batchPredictRisks, 
   generateAIRiskAnalysis 
 } from '../../services/predictiveAnalytics';
-import { AlertCircle, TrendingDown, TrendingUp, Minus, Activity } from 'lucide-react';
+import { AlertCircleIcon, TrendingDownIcon, TrendingUpIcon, MinusIcon, ActivityIcon } from '../common/icons';
 
 interface EarlyWarningSystemProps {
   students: Student[];
@@ -85,9 +85,9 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'improving': return <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />;
-      case 'declining': return <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
-      default: return <Minus className="w-4 h-4 text-slate-600 dark:text-slate-400" />;
+      case 'improving': return <TrendingUpIcon className="w-4 h-4 text-green-600 dark:text-green-400" />;
+      case 'declining': return <TrendingDownIcon className="w-4 h-4 text-red-600 dark:text-red-400" />;
+      default: return <MinusIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />;
     }
   };
 
@@ -96,7 +96,7 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Activity className="w-6 h-6" />
+            <ActivityIcon className="w-6 h-6" />
             Early Warning System
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -321,7 +321,7 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
                     <ul className="space-y-1">
                       {selectedPrediction.recommendedActions.map((action, idx) => (
                         <li key={idx} className="text-sm text-slate-600 dark:text-slate-400 flex items-start">
-                          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
+                          <AlertCircleIcon className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
                           {action}
                         </li>
                       ))}
@@ -330,7 +330,7 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
                 </div>
               ) : (
                 <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-8 text-center">
-                  <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                  <AlertCircleIcon className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">
                     Click on a student to view detailed AI analysis
                   </p>
@@ -343,7 +343,7 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
 
       {predictions.length === 0 && !loading && (
         <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-12 text-center">
-          <Activity className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <ActivityIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <p className="text-slate-600 dark:text-slate-400 text-lg">
             Click "Generate Predictions" to analyze student risk factors
           </p>

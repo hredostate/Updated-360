@@ -6,7 +6,7 @@ import {
   updateLearningPathProgress,
   generateProgressReport
 } from '../../services/learningPathGenerator';
-import { BookOpen, Target, TrendingUp, CheckCircle, Circle } from 'lucide-react';
+import { BookOpenIcon, TargetIcon, TrendingUpIcon, CheckCircleIcon, CircleIcon } from '../common/icons';
 
 interface PersonalizedLearningPathProps {
   students: Student[];
@@ -95,7 +95,7 @@ const PersonalizedLearningPath: React.FC<PersonalizedLearningPathProps> = ({
     <div className="p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <BookOpen className="w-6 h-6" />
+          <BookOpenIcon className="w-6 h-6" />
           Personalized Learning Paths
         </h2>
         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -282,7 +282,7 @@ const PersonalizedLearningPath: React.FC<PersonalizedLearningPathProps> = ({
               {/* Weekly Goals */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Target className="w-5 h-5" />
+                  <TargetIcon className="w-5 h-5" />
                   Weekly Goals
                 </h3>
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
@@ -294,9 +294,9 @@ const PersonalizedLearningPath: React.FC<PersonalizedLearningPathProps> = ({
                         onClick={() => toggleGoalCompletion(goal.id)}
                       >
                         {goal.completed ? (
-                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                          <CheckCircleIcon className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                         ) : (
-                          <Circle className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
+                          <CircleIcon className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
                         )}
                         <div className="flex-1">
                           <div className={`text-sm ${goal.completed ? 'line-through text-slate-500' : 'text-slate-700 dark:text-slate-300'}`}>
@@ -315,7 +315,7 @@ const PersonalizedLearningPath: React.FC<PersonalizedLearningPathProps> = ({
               {/* Recommendations */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUpIcon className="w-5 h-5" />
                   Recommendations
                 </h3>
                 <div className="grid gap-3">
@@ -350,7 +350,7 @@ const PersonalizedLearningPath: React.FC<PersonalizedLearningPathProps> = ({
 
           {!loading && !learningPath && (
             <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-12 text-center">
-              <BookOpen className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+              <BookOpenIcon className="w-16 h-16 text-slate-400 mx-auto mb-4" />
               <p className="text-slate-600 dark:text-slate-400 text-lg">
                 Select a student to generate their personalized learning path
               </p>
