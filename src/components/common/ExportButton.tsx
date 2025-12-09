@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { exportToExcel, type ExcelColumn } from '../../utils/excelExport';
-import { Download } from './icons';
+import { DownloadIcon } from './icons';
 import Button from './Button';
 
 interface ExportButtonProps {
@@ -59,7 +59,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
       disabled={disabled || isExporting || !data || data.length === 0}
       className={className}
     >
-      <Download className="w-4 h-4 mr-2" />
+      <DownloadIcon className="w-4 h-4 mr-2" />
       {isExporting ? 'Exporting...' : label}
     </Button>
   );

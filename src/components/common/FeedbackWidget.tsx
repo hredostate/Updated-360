@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
-import { X } from './icons';
+import { CloseIcon } from './icons';
 import Button from './Button';
 
 interface FeedbackWidgetProps {
@@ -110,7 +110,7 @@ export const FeedbackWidget: React.FC<FeedbackWidgetProps> = ({ userProfile }) =
             onClick={() => setIsOpen(false)}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
-            <X className="w-5 h-5" />
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -142,7 +142,7 @@ export const FeedbackWidget: React.FC<FeedbackWidgetProps> = ({ userProfile }) =
             }}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
           >
-            <X className="w-5 h-5" />
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
 

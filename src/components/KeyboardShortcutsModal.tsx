@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatShortcut, type Shortcut } from '../hooks/useKeyboardShortcuts';
-import { X } from './common/icons';
+import { CloseIcon } from './common/icons';
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;
@@ -47,7 +47,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
           >
-            <X className="w-6 h-6" />
+            <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 
