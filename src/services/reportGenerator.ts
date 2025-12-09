@@ -372,7 +372,7 @@ export async function batchGenerateReports(
 
   for (let i = 0; i < requests.length; i++) {
     const request = requests[i];
-    const data = studentsData.find(d => d.studentName.includes(String(request.studentId)));
+    const data = studentsData.find(d => d.studentName === studentsData[i]?.studentName);
     
     if (data) {
       const report = await generateReport(request, data);
