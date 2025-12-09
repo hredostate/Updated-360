@@ -2938,6 +2938,11 @@ const App: React.FC = () => {
                 if (error) { addToast(error.message, 'error'); return false; }
                 setAcademicAssignments(prev => prev.map(a => a.id === assignment.id ? { ...a, ...assignment } as AcademicTeachingAssignment : a));
             } else {
+                // Validate that term_id is provided
+                if (!assignment.term_id) {
+                    addToast('Please select a term for the assignment', 'error');
+                    return false;
+                }
                 const { data, error } = await Offline.insert('teaching_assignments', { ...assignment, school_id: userProfile.school_id });
                 if (error || !data) { addToast(error?.message || 'Failed to create assignment', 'error'); return false; }
                 setAcademicAssignments(prev => [...prev, data as AcademicTeachingAssignment]);
@@ -3294,6 +3299,13 @@ const App: React.FC = () => {
         const staffProfile = userProfile as UserProfile;
         
         try {
+            // Get the active term
+            const activeTerm = terms.find(t => t.is_active);
+            if (!activeTerm) {
+                addToast('No active term found. Please set an active term first.', 'error');
+                return false;
+            }
+            
             // Look up subject name from subject_id
             const subject = allSubjects.find(s => s.id === assignmentData.subject_id);
             if (!subject) {
@@ -3307,7 +3319,8 @@ const App: React.FC = () => {
                 teacher_user_id: assignmentData.teacher_user_id,
                 subject_name: subject.name,
                 academic_class_id: assignmentData.class_id,
-                school_id: staffProfile.school_id
+                school_id: staffProfile.school_id,
+                term_id: activeTerm.id
             });
             
             if (assignmentError || !assignment) {
@@ -3337,7 +3350,7 @@ const App: React.FC = () => {
             addToast(`Error creating class assignment: ${error.message}`, 'error');
             return false;
         }
-    }, [userProfile, userType, addToast, allSubjects, refreshClassGroups]);
+    }, [userProfile, userType, addToast, allSubjects, refreshClassGroups, terms]);
 
     const handleDeleteClassAssignment = useCallback(async (groupId: number): Promise<boolean> => {
         try {
@@ -4248,6 +4261,11 @@ const App: React.FC = () => {
         if (!userProfile) return false;
         try {
             for (const assignment of assignments) {
+                // Validate that term_id exists in the assignment data
+                if (!assignment.term_id) {
+                    addToast('Invalid legacy assignment: missing term_id', 'error');
+                    return false;
+                }
                 const { error } = await Offline.insert('teaching_assignments', {
                     ...assignment,
                     school_id: userProfile.school_id,

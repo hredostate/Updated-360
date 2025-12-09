@@ -411,7 +411,7 @@ const AssignmentForm: React.FC<{
     
     const canSave = bulkMode 
         ? (selectedLevel && selectedArms.size > 0 && localAs.subject_name && localAs.teacher_user_id && localAs.term_id)
-        : (localAs.academic_class_id && localAs.subject_name && localAs.teacher_user_id);
+        : (localAs.academic_class_id && localAs.subject_name && localAs.teacher_user_id && localAs.term_id);
 
     return (
         <div className="p-6 border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800 rounded-xl space-y-4 animate-fade-in">
