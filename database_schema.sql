@@ -1097,7 +1097,7 @@ BEGIN
         END IF;
         
         -- Write Policy (Check existence)
-        IF t IN ('reports', 'tasks', 'announcements', 'inventory_items', 'attendance_records', 'leave_requests', 'score_entries', 'orders', 'order_items', 'order_notes', 'team_feedback', 'report_comments', 'lesson_plans', 'quiz_responses', 'student_intervention_plans', 'sip_logs', 'student_invoices', 'payments', 'timetable_entries', 'timetable_periods', 'holidays', 'teacher_shifts', 'student_subject_choices', 'class_subjects', 'roles', 'user_role_assignments', 'assessment_structures', 'grading_schemes', 'grading_scheme_rules', 'school_config', 'academic_classes', 'terms', 'student_awards', 'staff_awards') THEN
+        IF t IN ('reports', 'tasks', 'announcements', 'inventory_items', 'attendance_records', 'leave_requests', 'score_entries', 'orders', 'order_items', 'order_notes', 'team_feedback', 'report_comments', 'lesson_plans', 'quiz_responses', 'student_intervention_plans', 'sip_logs', 'student_invoices', 'payments', 'timetable_entries', 'timetable_periods', 'holidays', 'teacher_shifts', 'student_subject_choices', 'class_subjects', 'roles', 'user_role_assignments', 'assessment_structures', 'grading_schemes', 'grading_scheme_rules', 'school_config', 'academic_classes', 'terms', 'student_awards', 'staff_awards', 'audit_log') THEN
              IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = t AND policyname = format('Auth write %s', t)) THEN
                  EXECUTE format('CREATE POLICY "Auth write %I" ON %I FOR ALL TO authenticated USING (true) WITH CHECK (true)', t, t);
              END IF;
