@@ -33,6 +33,8 @@ export const ALL_PERMISSIONS: string[] = [
   'school.console.view', // Master permission to see the console
   'score_entries.edit_department',
   'score_entries.edit_self',
+  'score_entries.view_all', // View all teacher-entered scores
+  'score_entries.edit_all', // Edit any score entry (for Team Lead/Admin)
   'send-emergency-broadcast',
   'submit-report',
   'view-all-reports',
@@ -130,7 +132,7 @@ export const VIEWS = {
   ORDER_MANAGER: 'Order Manager',
   SOCIAL_MEDIA_HUB: 'Social Media Hub',
   PREDICTIVE_ANALYTICS: 'Predictive Analytics',
-  ZERO_SCORE_MONITOR: 'Zero Score Monitor',
+  SCORE_REVIEW: 'Score Review', // Team Lead/Admin view of all scores
 };
 
 export const STUDENT_STATUSES = [

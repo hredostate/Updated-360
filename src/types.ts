@@ -726,9 +726,19 @@ export interface ScoreEntry {
     grade: string;
     teacher_comment?: string | null;
     
+    // Audit fields for tracking who entered/modified scores
+    entered_by_user_id?: string | null;
+    last_modified_by_user_id?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    
     // Legacy columns for backward compatibility if needed
     ca_score?: number;
     exam_score?: number;
+    
+    // Populated via joins in UI
+    entered_by?: UserProfile;
+    last_modified_by?: UserProfile;
 }
 
 export interface StudentTermReportDetails {

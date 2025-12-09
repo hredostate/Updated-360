@@ -67,8 +67,8 @@ END $$;
 
 INSERT INTO public.roles (school_id, title, description, permissions) VALUES
 (1, 'Admin', 'System Administrator', ARRAY['*']),
-(1, 'Principal', 'School Head', ARRAY['view-dashboard', 'view-all-reports', 'manage-users', 'manage-students', 'view-analytics', 'view-school-health-overview', 'manage-tasks', 'manage-announcements', 'view-teacher-ratings', 'view-ai-task-suggestions', 'view-at-risk-students', 'view-all-student-data', 'view-sensitive-reports']),
-(1, 'Team Lead', 'Department Head', ARRAY['view-dashboard', 'submit-report', 'view-all-reports', 'assign-reports', 'comment-on-reports', 'manage-tasks', 'manage-curriculum', 'view-coverage-feedback']),
+(1, 'Principal', 'School Head', ARRAY['view-dashboard', 'view-all-reports', 'manage-users', 'manage-students', 'view-analytics', 'view-school-health-overview', 'manage-tasks', 'manage-announcements', 'view-teacher-ratings', 'view-ai-task-suggestions', 'view-at-risk-students', 'view-all-student-data', 'view-sensitive-reports', 'score_entries.view_all', 'score_entries.edit_all', 'results.lock_and_publish']),
+(1, 'Team Lead', 'Department Head', ARRAY['view-dashboard', 'submit-report', 'view-all-reports', 'assign-reports', 'comment-on-reports', 'manage-tasks', 'manage-curriculum', 'view-coverage-feedback', 'score_entries.view_all', 'score_entries.edit_all', 'results.lock_and_publish']),
 (1, 'Teacher', 'Classroom teacher', ARRAY['view-dashboard', 'submit-report', 'score_entries.edit_self', 'view-my-reports', 'view-my-classes', 'view-my-lesson-plans', 'view-my-coverage-feedback', 'take-class-attendance', 'view-curriculum-readonly']),
 (1, 'Counselor', 'Student guidance', ARRAY['view-dashboard', 'submit-report', 'view-all-reports', 'manage-students', 'view-at-risk-students', 'view-sensitive-reports']),
 (1, 'Accountant', 'Financial management', ARRAY['view-dashboard', 'manage-payroll', 'view-sms-balance', 'manage-finance', 'manage-orders']),
@@ -297,8 +297,28 @@ CREATE TABLE IF NOT EXISTS public.score_entries (
     teacher_comment TEXT,
     ca_score NUMERIC,
     exam_score NUMERIC,
+    entered_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    last_modified_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(term_id, academic_class_id, subject_name, student_id)
 );
+
+-- Add columns to existing score_entries table if they don't exist
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='entered_by_user_id') THEN
+        ALTER TABLE public.score_entries ADD COLUMN entered_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='last_modified_by_user_id') THEN
+        ALTER TABLE public.score_entries ADD COLUMN last_modified_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='created_at') THEN
+        ALTER TABLE public.score_entries ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='updated_at') THEN
+        ALTER TABLE public.score_entries ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+END $$;
 CREATE TABLE IF NOT EXISTS public.student_term_reports (
     id SERIAL PRIMARY KEY,
     student_id INTEGER REFERENCES public.students(id) ON DELETE CASCADE,

@@ -3770,10 +3770,17 @@ const App: React.FC = () => {
         if (!userProfile || userType !== 'staff') return false;
         
         try {
+            // Add entered_by_user_id and last_modified_by_user_id to each score
+            const enrichedScores = scores.map(score => ({
+                ...score,
+                entered_by_user_id: score.entered_by_user_id || userProfile.id,
+                last_modified_by_user_id: userProfile.id
+            }));
+
             // Bulk upsert scores using the unique constraint (term_id, academic_class_id, subject_name, student_id)
             const { error } = await supabase
                 .from('score_entries')
-                .upsert(scores, { onConflict: 'term_id,academic_class_id,subject_name,student_id' });
+                .upsert(enrichedScores, { onConflict: 'term_id,academic_class_id,subject_name,student_id' });
             
             if (error) {
                 addToast(`Error saving scores: ${error.message}`, 'error');
@@ -3875,6 +3882,36 @@ const App: React.FC = () => {
             return true;
         } catch (error: any) {
             addToast(`Error saving scores: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast, setScoreEntries]);
+
+    const handleUpdateScore = useCallback(async (scoreId: number, updates: Partial<ScoreEntry>): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        const staffProfile = userProfile as UserProfile;
+        
+        try {
+            // Update the score entry
+            const { error } = await supabase
+                .from('score_entries')
+                .update(updates)
+                .eq('id', scoreId);
+            
+            if (error) {
+                addToast(`Error updating score: ${error.message}`, 'error');
+                return false;
+            }
+            
+            // Refresh score entries for the current school
+            const { data: refreshedScores } = await supabase
+                .from('score_entries')
+                .select('*')
+                .eq('school_id', staffProfile.school_id);
+            if (refreshedScores) setScoreEntries(refreshedScores);
+            
+            return true;
+        } catch (error: any) {
+            addToast(`Error updating score: ${error.message}`, 'error');
             return false;
         }
     }, [userProfile, userType, addToast, setScoreEntries]);
@@ -5150,6 +5187,7 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                                         handleCopyLessonPlan,
                                         handleApproveLessonPlan,
                                         handleSaveScores,
+                                        handleUpdateScore,
                                         handleSubmitScoresForReview,
                                         handleSaveAssessment,
                                         handleDeleteAssessment,

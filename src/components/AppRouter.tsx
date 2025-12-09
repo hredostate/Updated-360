@@ -24,6 +24,7 @@ import TeacherScoreEntryView from './TeacherScoreEntryView';
 import AssessmentManager from './AssessmentManager';
 import TeachingAssignmentsContainer from './TeachingAssignmentsContainer';
 import ResultManager from './ResultManager';
+import ScoreReviewView from './ScoreReviewView';
 import CoverageFeedbackReport from './CoverageFeedbackReport';
 import DataUploader from './DataUploader';
 import LivingPolicyManager from './LivingPolicyManager';
@@ -494,6 +495,20 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                 gradingSchemes={data.gradingSchemes}
                 schoolConfig={data.schoolConfig}
                 onUpdateComments={actions.handleUpdateReportComments}
+                addToast={actions.addToast}
+             />;
+        case VIEWS.SCORE_REVIEW:
+             return <ScoreReviewView 
+                scoreEntries={data.scoreEntries}
+                students={data.students}
+                academicAssignments={data.academicAssignments}
+                academicClassStudents={data.academicClassStudents}
+                users={data.users}
+                terms={data.terms}
+                gradingSchemes={data.gradingSchemes}
+                userPermissions={data.userPermissions}
+                currentUserId={data.userProfile.id}
+                onUpdateScore={actions.handleUpdateScore}
                 addToast={actions.addToast}
              />;
         case VIEWS.COVERAGE_FEEDBACK:
