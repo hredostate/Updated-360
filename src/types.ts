@@ -1403,147 +1403,80 @@ export interface CommunicationLogData {
 }
 
 // ============================================
-// Predictive Analytics Types
+// Termii WhatsApp Integration Types
 // ============================================
 
-export interface RiskFactor {
-    name: string;
-    weight: number; // 0-1
-    currentValue: number;
-    threshold: number;
-    trend: 'up' | 'down' | 'stable';
-    description: string;
-}
-
-export interface RiskPrediction {
-    studentId: number;
-    studentName: string;
-    riskScore: number; // 0-100
-    riskLevel: 'low' | 'moderate' | 'high' | 'critical';
-    confidence: number; // 0-100%
-    predictedDate: string; // When issue may manifest
-    factors: RiskFactor[];
-    recommendedActions: string[];
-    trend: 'improving' | 'stable' | 'declining';
-}
-
-export interface Topic {
-    id: string;
-    title: string;
-    description: string;
-    difficulty: 'beginner' | 'intermediate' | 'advanced';
-    estimatedHours: number;
-}
-
-export interface SubjectPath {
-    subjectId: number;
-    subjectName: string;
-    currentLevel: 'beginner' | 'intermediate' | 'advanced';
-    targetLevel: string;
-    strengths: string[];
-    areasForImprovement: string[];
-    suggestedTopics: Topic[];
-    estimatedTimeToTarget: string;
-}
-
-export interface Recommendation {
-    type: 'resource' | 'exercise' | 'activity' | 'assessment';
-    title: string;
-    description: string;
-    priority: 'high' | 'medium' | 'low';
-    estimatedDuration: string;
-    relatedSubject: string;
-}
-
-export interface WeeklyGoal {
-    id: string;
-    week: number;
-    description: string;
-    completed: boolean;
-    dueDate: string;
-}
-
-export interface LearningPath {
-    studentId: number;
-    generatedAt: string;
-    validUntil: string;
-    overallProgress: number; // 0-100
-    subjects: SubjectPath[];
-    weeklyGoals: WeeklyGoal[];
-    recommendations: Recommendation[];
-}
-
-export interface TimetableEntry {
-    id: string;
-    day: string;
-    period: number;
-    startTime: string;
-    endTime: string;
-    subjectId: number;
-    subjectName: string;
-    teacherId: string;
-    teacherName: string;
-    classId: number;
-    className: string;
-    roomId?: number;
-    roomName?: string;
-}
-
-export interface ScheduleConstraint {
-    type: 'hard' | 'soft'; // Hard = must satisfy, Soft = preference
-    name: string;
-    weight: number; // For soft constraints
-    validate: (schedule: TimetableEntry[]) => boolean;
-}
-
-export interface ScheduleOptimizationResult {
-    schedule: TimetableEntry[];
-    score: number; // 0-100
-    satisfiedConstraints: string[];
-    violatedConstraints: string[];
-    suggestions: string[];
-    alternativeSchedules: TimetableEntry[][];
-}
-
-export interface SubjectComment {
-    subjectId: number;
-    subjectName: string;
-    comment: string;
-    grade: string;
-    effort: 'excellent' | 'good' | 'satisfactory' | 'needs improvement';
-}
-
-export interface GeneratedReport {
-    studentId: number;
-    subjectComments: SubjectComment[];
-    overallComment: string;
-    strengthsHighlighted: string[];
-    areasForImprovement: string[];
-    goalsForNextTerm: string[];
-    parentRecommendations: string[];
-    generatedAt: string;
-    editedAt?: string;
-    approvedBy?: string;
-}
-
-export interface ReportGenerationRequest {
-    studentId: number;
-    termId: number;
-    subjects: number[];
-    includeAttendance: boolean;
-    includeBehavior: boolean;
-    tone: 'formal' | 'encouraging' | 'constructive' | 'balanced';
-    length: 'brief' | 'standard' | 'detailed';
-    focusAreas?: string[];
-}
-
-export interface PredictionAccuracy {
+export interface TermiiSettings {
     id: number;
     school_id: number;
-    prediction_type: string;
-    total_predictions: number;
-    accurate_predictions: number;
-    accuracy_rate: number;
-    period_start: string;
-    period_end: string;
+    api_key: string;
+    device_id?: string;
+    base_url: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WhatsAppMessageLog {
+    id: number;
+    school_id: number;
+    recipient_phone: string;
+    template_id?: string;
+    message_type: 'template' | 'template_media' | 'conversational';
+    message_content?: Record<string, any>;
+    media_url?: string;
+    termii_message_id?: string;
+    status: 'pending' | 'sent' | 'delivered' | 'failed';
+    error_message?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface TermiiTemplateMessage {
+    api_key: string;
+    device_id: string;
+    template_id: string;
+    phone_number: string;
+    data: Record<string, string>; // Template variable replacements
+}
+
+export interface TermiiTemplateMediaMessage {
+    api_key: string;
+    device_id: string;
+    template_id: string;
+    phone_number: string;
+    data: Record<string, string>;
+    media: {
+        url: string;
+        caption?: string;
+    };
+}
+
+export interface TermiiConversationalMessage {
+    api_key: string;
+    to: string;
+    from: string;
+    sms: string;
+    type: string;
+    channel: 'whatsapp';
+}
+
+export interface TermiiSenderId {
+    sender_id: string;
+    status: string;
+    company: string;
+    usecase: string;
+    country: string;
+    created_at: string;
+}
+
+export interface TermiiPhonebookContact {
+    id: number;
+    pid: number;
+    phone_number: string;
+    email_address: string;
+    first_name: string;
+    last_name: string;
+    company: string;
+    created_at: string;
 }
