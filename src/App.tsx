@@ -33,6 +33,9 @@ import LandingPage from './components/LandingPage';
 import StudentLoginPage from './components/StudentLoginPage';
 import AIBulkResponseModal from './components/AIBulkResponseModal';
 import TaskFormModal from './components/TaskFormModal';
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import FeedbackWidget from './components/common/FeedbackWidget';
+import { useKeyboardShortcuts, defaultShortcuts } from './hooks/useKeyboardShortcuts';
 
 import StudentSurveysView from './components/StudentSurveysView';
 import StudentRateMyTeacherView from './components/StudentRateMyTeacherView';
@@ -277,6 +280,7 @@ const App: React.FC = () => {
     const [navContext, setNavContext] = useState<NavigationContext | null>(null);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false); // Manually control task modal from App level for Copilot access
     const [isCreateStudentAccountModalOpen, setIsCreateStudentAccountModalOpen] = useState(false);
+    const [isKeyboardShortcutsModalOpen, setIsKeyboardShortcutsModalOpen] = useState(false);
     
     const [booting, setBooting] = useState(true);
     const lastFetchedUserId = useRef<string | null>(null);
@@ -4778,6 +4782,55 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
         return await handleUpdateResultComments(reportId, teacherComment, principalComment);
     }, [handleUpdateResultComments]);
 
+    // --- Keyboard Shortcuts Setup ---
+    const keyboardShortcutsHandlers = useMemo(() => ({
+        onSearch: () => {
+            // Focus search input if available
+            const searchInput = document.querySelector('input[type="search"], input[placeholder*="Search"]') as HTMLInputElement;
+            if (searchInput) searchInput.focus();
+        },
+        onCommandPalette: () => {
+            // Future: Open command palette
+            console.log('Command palette not yet implemented');
+        },
+        onShowHelp: () => {
+            setIsKeyboardShortcutsModalOpen(true);
+        },
+        onSave: () => {
+            // Trigger save on current form if available
+            const saveButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+            if (saveButton && !saveButton.disabled) saveButton.click();
+        },
+        onNew: () => {
+            // Context-aware new action
+            if (currentView === 'Students') {
+                // Navigate to add student if permission exists
+                setCurrentView('upload-data');
+            } else if (currentView === 'Reports') {
+                setCurrentView('reports');
+            } else if (currentView === 'Tasks') {
+                setIsTaskModalOpen(true);
+            }
+        },
+        onGoToDashboard: () => setCurrentView('Dashboard'),
+        onGoToStudents: () => setCurrentView('Students'),
+        onGoToReports: () => setCurrentView('feed'),
+        onGoToTasks: () => setCurrentView('tasks'),
+        onGoToAnalytics: () => setCurrentView('analytics'),
+        onEscape: () => {
+            // Close any open modals
+            setIsKeyboardShortcutsModalOpen(false);
+            setIsTaskModalOpen(false);
+            setIsCreateStudentAccountModalOpen(false);
+        },
+    }), [currentView]);
+
+    const shortcuts = useMemo(() => defaultShortcuts(keyboardShortcutsHandlers), [keyboardShortcutsHandlers]);
+    
+    // Enable keyboard shortcuts only when logged in and not on auth pages
+    const keyboardShortcutsEnabled = !!session && !AUTH_ONLY_VIEWS.includes(currentView);
+    useKeyboardShortcuts(shortcuts, { enabled: keyboardShortcutsEnabled });
+
 
     // ... (Rendering Logic) ...
 
@@ -5397,6 +5450,16 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                 users={users}
                 currentUser={userProfile as UserProfile}
                 initialData={navContext?.data}
+            />
+
+            <KeyboardShortcutsModal
+                isOpen={isKeyboardShortcutsModalOpen}
+                onClose={() => setIsKeyboardShortcutsModalOpen(false)}
+                shortcuts={shortcuts}
+            />
+
+            <FeedbackWidget
+                userProfile={userProfile as { id: string; school_id: number } | null}
             />
         </div>
     );

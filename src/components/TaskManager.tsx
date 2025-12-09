@@ -4,6 +4,8 @@ import type { Task, UserProfile, TaskPriority } from '../types';
 import { TaskStatus } from '../types';
 import TaskCard from './TaskCard';
 import TaskFormModal from './TaskFormModal';
+import { DownloadIcon } from './common/icons';
+import { exportToExcel, type ExcelColumn } from '../utils/excelExport';
 
 interface TaskManagerProps {
   allTasks: Task[];
@@ -84,6 +86,34 @@ const TaskManager: React.FC<TaskManagerProps> = ({ allTasks, users, currentUser,
     'Low': 1,
   };
 
+  const handleExportTasks = () => {
+    const columns: ExcelColumn[] = [
+      { key: 'title', header: 'Title', width: 35, type: 'string' },
+      { key: 'description', header: 'Description', width: 50, type: 'string' },
+      { key: 'status', header: 'Status', width: 15, type: 'string' },
+      { key: 'priority', header: 'Priority', width: 12, type: 'string' },
+      { key: 'assignee', header: 'Assigned To', width: 25, type: 'string' },
+      { key: 'due_date', header: 'Due Date', width: 15, type: 'date' },
+      { key: 'created_at', header: 'Created At', width: 15, type: 'date' },
+    ];
+
+    const dataToExport = tasksToDisplay.map(task => ({
+      title: task.title,
+      description: task.description || '',
+      status: task.status,
+      priority: task.priority,
+      assignee: getAssignee(task.user_id)?.name || 'Unassigned',
+      due_date: task.due_date,
+      created_at: task.created_at,
+    }));
+
+    exportToExcel(dataToExport, columns, {
+      filename: 'tasks_export',
+      sheetName: 'Tasks',
+      includeTimestamp: true
+    });
+  };
+
   return (
     <div className="flex flex-col h-full animate-fade-in">
       <div className="flex justify-between items-center">
@@ -92,6 +122,14 @@ const TaskManager: React.FC<TaskManagerProps> = ({ allTasks, users, currentUser,
           <p className="text-slate-600 dark:text-slate-300 mt-1">Manage all tasks across the school.</p>
         </div>
         <div className="flex items-center space-x-4">
+            <button 
+              onClick={handleExportTasks}
+              className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
+              title="Export Tasks to Excel"
+            >
+              <DownloadIcon className="w-4 h-4" />
+              Export
+            </button>
             <div className="flex space-x-1 bg-slate-500/10 p-1 rounded-lg">
                 <button onClick={() => setFilter('all')} className={`px-3 py-1 text-sm rounded-md ${filter === 'all' ? 'bg-white dark:bg-slate-700 shadow' : ''}`}>All Tasks</button>
                 <button onClick={() => setFilter('it')} className={`px-3 py-1 text-sm rounded-md ${filter === 'it' ? 'bg-white dark:bg-slate-700 shadow' : ''}`}>IT</button>

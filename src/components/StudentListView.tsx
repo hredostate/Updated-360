@@ -6,6 +6,7 @@ import { PlusCircleIcon, DownloadIcon, TrashIcon } from './common/icons';
 import Spinner from './common/Spinner';
 import { VIEWS, STUDENT_STATUSES } from '../constants';
 import { exportToCsv } from '../utils/export';
+import { exportToExcel, type ExcelColumn } from '../utils/excelExport';
 import Pagination from './common/Pagination';
 
 interface StudentListViewProps {
@@ -326,6 +327,40 @@ const StudentListView: React.FC<StudentListViewProps> = ({
       exportToCsv(dataToExport, `students_export_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
+  const handleExportStudentsExcel = () => {
+      const columns: ExcelColumn[] = [
+          { key: 'name', header: 'Name', width: 25, type: 'string' },
+          { key: 'admission_number', header: 'Admission Number', width: 18, type: 'string' },
+          { key: 'email', header: 'Email/Username', width: 30, type: 'string' },
+          { key: 'class', header: 'Class', width: 15, type: 'string' },
+          { key: 'arm', header: 'Arm', width: 10, type: 'string' },
+          { key: 'status', header: 'Status', width: 18, type: 'string' },
+          { key: 'has_account', header: 'Has Account', width: 12, type: 'string' },
+          { key: 'date_of_birth', header: 'Date of Birth', width: 15, type: 'date' },
+          { key: 'guardian_phone', header: 'Guardian Contact', width: 20, type: 'string' },
+          { key: 'address', header: 'Address', width: 35, type: 'string' },
+      ];
+
+      const dataToExport = filteredStudents.map(s => ({
+          name: s.name,
+          admission_number: s.admission_number || '',
+          email: s.email || '',
+          class: s.class?.name || '',
+          arm: s.arm?.name || '',
+          status: s.status || '',
+          has_account: s.user_id ? 'Yes' : 'No',
+          date_of_birth: s.date_of_birth || '',
+          guardian_phone: s.guardian_phone || '',
+          address: s.address || ''
+      }));
+
+      exportToExcel(dataToExport, columns, {
+          filename: 'students_export',
+          sheetName: 'Students',
+          includeTimestamp: true
+      });
+  };
+
   const commonInputClasses = "w-full p-2 text-sm border rounded-md bg-white/50 dark:bg-slate-800/50 border-slate-300/60 dark:border-slate-700/60 focus:ring-blue-500 focus:border-blue-500";
 
   return (
@@ -371,8 +406,13 @@ const StudentListView: React.FC<StudentListViewProps> = ({
                 <option value="">All Teachers</option>
                 {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <button onClick={handleExportStudents} className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-1" title="Export Students">
+            <button onClick={handleExportStudentsExcel} className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-1" title="Export to Excel">
                 <DownloadIcon className="w-4 h-4" />
+                <span className="text-xs">XLSX</span>
+            </button>
+            <button onClick={handleExportStudents} className="px-3 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 flex items-center gap-1" title="Export to CSV">
+                <DownloadIcon className="w-4 h-4" />
+                <span className="text-xs">CSV</span>
             </button>
           </div>
         </div>

@@ -5,10 +5,11 @@ import { ReportType } from '../types';
 import AutomatedCommunicationModal from './AutomatedCommunicationModal';
 import ReportAnalysis from './ReportAnalysis';
 import CommentForm from './CommentForm';
-import { WandIcon, TrashIcon, SearchIcon, CalendarIcon } from './common/icons';
+import { WandIcon, TrashIcon, SearchIcon, CalendarIcon, DownloadIcon } from './common/icons';
 import Spinner from './common/Spinner';
 import AIResponseModal from './AIResponseModal';
 import Pagination from './common/Pagination';
+import { exportToExcel, type ExcelColumn } from '../utils/excelExport';
 
 // --- Bulk Action Bar Component ---
 const BulkActionBar: React.FC<{
@@ -374,6 +375,37 @@ const ReportFeed: React.FC<ReportFeedProps> = (props) => {
             setSelectedReportIds(newSet);
         }
     };
+
+    const handleExportReports = () => {
+        const columns: ExcelColumn[] = [
+            { key: 'id', header: 'Report ID', width: 10, type: 'number' },
+            { key: 'type', header: 'Type', width: 20, type: 'string' },
+            { key: 'text', header: 'Report Text', width: 50, type: 'string' },
+            { key: 'author', header: 'Author', width: 25, type: 'string' },
+            { key: 'assignee', header: 'Assigned To', width: 25, type: 'string' },
+            { key: 'status', header: 'Status', width: 12, type: 'string' },
+            { key: 'created_at', header: 'Created At', width: 15, type: 'date' },
+            { key: 'response', header: 'Response', width: 50, type: 'string' },
+        ];
+
+        const reportsToExport = activeTab === 'pending' ? filteredPendingReports : filteredTreatedReports;
+        const dataToExport = reportsToExport.map(report => ({
+            id: report.id,
+            type: report.report_type,
+            text: report.report_text,
+            author: report.author?.name || 'Unknown',
+            assignee: report.assignee?.name || 'Unassigned',
+            status: report.status || 'pending',
+            created_at: report.created_at,
+            response: report.response || '',
+        }));
+
+        exportToExcel(dataToExport, columns, {
+            filename: `reports_${activeTab}`,
+            sheetName: activeTab === 'pending' ? 'Pending Reports' : 'Treated Reports',
+            includeTimestamp: true
+        });
+    };
     
     if (reportToAnalyze) {
         return <ReportAnalysis report={reportToAnalyze} allTasks={tasks} onBack={() => setReportToAnalyze(null)} />
@@ -421,6 +453,14 @@ const ReportFeed: React.FC<ReportFeedProps> = (props) => {
                      </div>
                      
                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                        <button 
+                            onClick={handleExportReports}
+                            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm"
+                            title="Export Reports to Excel"
+                        >
+                            <DownloadIcon className="w-4 h-4" />
+                            Export
+                        </button>
                         <div className="flex items-center gap-2">
                             <input
                                 type="checkbox"
