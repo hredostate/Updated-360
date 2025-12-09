@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
 import type { PaystackApiSettings } from '../types';
 import Spinner from './common/Spinner';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface Campus {
     id: number;
@@ -117,7 +118,8 @@ const PaymentGatewaySettings: React.FC<PaymentGatewaySettingsProps> = ({ schoolI
             fetchData();
         } catch (error: any) {
             console.error('Error saving settings:', error);
-            alert(`Failed to save settings: ${error.message}`);
+            const userFriendlyMessage = mapSupabaseError(error);
+            alert(`Failed to save settings: ${userFriendlyMessage}`);
         } finally {
             setSaving(false);
         }
@@ -138,7 +140,8 @@ const PaymentGatewaySettings: React.FC<PaymentGatewaySettingsProps> = ({ schoolI
             fetchData();
         } catch (error: any) {
             console.error('Error deleting settings:', error);
-            alert(`Failed to delete settings: ${error.message}`);
+            const userFriendlyMessage = mapSupabaseError(error);
+            alert(`Failed to delete settings: ${userFriendlyMessage}`);
         }
     };
 

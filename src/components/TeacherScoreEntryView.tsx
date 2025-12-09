@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { AcademicTeachingAssignment, Student, AcademicClassStudent, ScoreEntry, GradingScheme, SchoolConfig, AssessmentComponent } from '../types';
 import Spinner from './common/Spinner';
 import { DownloadIcon, UploadCloudIcon } from './common/icons';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface TeacherScoreEntryViewProps {
     assignmentId: number;
@@ -294,7 +295,8 @@ const TeacherScoreEntryView: React.FC<TeacherScoreEntryViewProps> = ({
 
         } catch (error: any) {
             console.error(error);
-            addToast(`Error processing file: ${error.message}`, 'error');
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast(`Error processing file: ${userFriendlyMessage}`, 'error');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";

@@ -1,10 +1,169 @@
 /**
  * Standardized Error Handling Utilities
  * Provides consistent error handling patterns with toast notifications
+ * Includes Supabase-specific error handling to provide user-friendly messages
  */
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 type AddToastFunction = (message: string, type?: ToastType) => void;
+
+/**
+ * Supabase error object structure
+ */
+interface SupabaseError {
+    message: string;
+    details?: string;
+    hint?: string;
+    code?: string;
+}
+
+/**
+ * Maps Supabase error codes and messages to user-friendly messages
+ * @param error - The error object from Supabase
+ * @returns User-friendly error message
+ */
+export const mapSupabaseError = (error: unknown): string => {
+    // Check if it's a Supabase error object
+    if (error && typeof error === 'object' && 'message' in error) {
+        const supabaseError = error as SupabaseError;
+        const message = supabaseError.message.toLowerCase();
+        const code = supabaseError.code?.toLowerCase();
+
+        // Network and connection errors
+        if (
+            message.includes('fetch failed') ||
+            message.includes('network error') ||
+            message.includes('network request failed') ||
+            message.includes('failed to fetch') ||
+            message.includes('networkerror') ||
+            message.includes('connection') ||
+            message.includes('timeout') ||
+            message.includes('econnrefused') ||
+            message.includes('enotfound') ||
+            code === 'ECONNREFUSED' ||
+            code === 'ETIMEDOUT'
+        ) {
+            return 'Network connection lost. Please check your internet connection and try again.';
+        }
+
+        // Supabase configuration errors - hide technical details
+        if (
+            message.includes('invalid api key') ||
+            message.includes('invalid jwt') ||
+            message.includes('jwt expired') ||
+            message.includes('supabase url') ||
+            message.includes('supabase_url') ||
+            message.includes('anon key') ||
+            message.includes('project ref') ||
+            code === 'PGRST301'
+        ) {
+            return 'Service configuration issue. Please contact your system administrator.';
+        }
+
+        // Authentication errors
+        if (
+            message.includes('invalid login credentials') ||
+            message.includes('email not confirmed') ||
+            message.includes('user not found') ||
+            code === '401'
+        ) {
+            return 'Authentication failed. Please check your credentials and try again.';
+        }
+
+        // Permission/Authorization errors
+        if (
+            message.includes('permission denied') ||
+            message.includes('insufficient privileges') ||
+            message.includes('policy') ||
+            message.includes('row-level security') ||
+            message.includes('rls') ||
+            code === '403' ||
+            code === 'PGRST301' // PostgreSQL REST API error for permissions/auth
+        ) {
+            return 'You do not have permission to perform this action.';
+        }
+
+        // Database constraint errors
+        if (
+            message.includes('duplicate key') ||
+            message.includes('unique constraint') ||
+            message.includes('violates unique constraint') ||
+            code === '23505'
+        ) {
+            return 'This record already exists. Please use a different value.';
+        }
+
+        if (
+            message.includes('foreign key') ||
+            message.includes('violates foreign key constraint') ||
+            code === '23503'
+        ) {
+            return 'This operation cannot be completed because it would break data relationships.';
+        }
+
+        if (
+            message.includes('not null constraint') ||
+            message.includes('violates not-null constraint') ||
+            code === '23502'
+        ) {
+            return 'Required information is missing. Please fill in all required fields.';
+        }
+
+        // Rate limiting
+        if (message.includes('rate limit') || message.includes('too many requests') || code === '429') {
+            return 'Too many requests. Please wait a moment and try again.';
+        }
+
+        // Server errors
+        if (
+            message.includes('internal server error') ||
+            message.includes('500') ||
+            code === '500' ||
+            code?.startsWith('5')
+        ) {
+            return 'A server error occurred. Please try again later.';
+        }
+
+        // Realtime/subscription errors
+        if (
+            message.includes('websocket') ||
+            message.includes('realtime') ||
+            message.includes('subscription')
+        ) {
+            return 'Live updates temporarily unavailable. Your data is safe.';
+        }
+
+        // If we have a message but it doesn't match patterns, check if it looks technical
+        if (supabaseError.message) {
+            // Check if the message contains technical terms that shouldn't be shown to users
+            const technicalTerms = [
+                'postgresql',
+                'postgrest',
+                'pg_',
+                'schema',
+                'relation',
+                'column',
+                'null value',
+                'syntax error',
+                'json',
+                'ssl',
+                'tls',
+            ];
+
+            const isTechnical = technicalTerms.some(term => message.includes(term));
+            
+            if (isTechnical) {
+                return 'An error occurred while processing your request. Please try again or contact support.';
+            }
+
+            // If the message looks user-friendly, return it
+            return supabaseError.message;
+        }
+    }
+
+    // Fallback for unknown errors
+    return 'An unexpected error occurred. Please try again.';
+};
 
 /**
  * Standard error handler that shows a toast notification
@@ -46,6 +205,30 @@ export const withErrorHandling = <T extends (...args: any[]) => Promise<any>>(
             return null;
         }
     }) as T;
+};
+
+/**
+ * Handle Supabase-specific errors with user-friendly messages
+ * @param error - The error object from Supabase
+ * @param addToast - Toast notification function
+ * @param context - Context message for the error (e.g., "Failed to save settings")
+ */
+export const handleSupabaseError = (
+    error: unknown,
+    addToast: AddToastFunction,
+    context?: string
+): void => {
+    const userFriendlyMessage = mapSupabaseError(error);
+    const fullMessage = context ? `${context}: ${userFriendlyMessage}` : userFriendlyMessage;
+    
+    // Log the full error details for debugging
+    console.error('Supabase Error:', {
+        context,
+        error,
+        userMessage: userFriendlyMessage
+    });
+    
+    addToast(fullMessage, 'error');
 };
 
 /**

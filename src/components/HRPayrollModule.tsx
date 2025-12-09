@@ -16,6 +16,7 @@ import LeaveApprovalView from './LeaveApprovalView';
 import { BanknotesIcon, UsersIcon, CalendarIcon, BuildingIcon, ClockIcon, EditIcon, ChartBarIcon } from './common/icons';
 import Spinner from './common/Spinner';
 import { supa as supabase } from '../offline/client';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 
 interface HRPayrollModuleProps {
@@ -223,7 +224,8 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
             return true;
         } catch (e: any) {
             console.error('Exception deleting leave request:', e);
-            addToast(e.message, 'error');
+            const userFriendlyMessage = mapSupabaseError(e);
+            addToast(userFriendlyMessage, 'error');
             return false;
         }
     }, [addToast]);
@@ -237,7 +239,8 @@ const HRPayrollModule: React.FC<HRPayrollModuleProps> = ({
             if(error) throw error;
             addToast('Payslips generated successfully.', 'success');
         } catch(e: any) {
-            addToast(e.message, 'error');
+            const userFriendlyMessage = mapSupabaseError(e);
+            addToast(userFriendlyMessage, 'error');
         }
     };
 

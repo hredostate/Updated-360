@@ -5,6 +5,7 @@ import type { TimetablePeriod, TimetableEntry, TimetableLocation, UserProfile, A
 import Spinner from './common/Spinner';
 import { PlusCircleIcon, TrashIcon, EditIcon, ClockIcon, CheckCircleIcon, MapPinIcon } from './common/icons';
 import SearchableSelect from './common/SearchableSelect';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface TimetableViewProps {
     userProfile?: UserProfile;
@@ -632,7 +633,8 @@ const TimetableView: React.FC<TimetableViewProps> = ({ userProfile, users = [], 
             } else if (error.message.includes('unique_location_slot')) {
                 addToast('Double Booking Error: This location is already booked at this time.', 'error');
             } else {
-                addToast(`Error saving entry: ${error.message}`, 'error');
+                const userFriendlyMessage = mapSupabaseError(error);
+                addToast(`Error saving entry: ${userFriendlyMessage}`, 'error');
             }
         } else {
             addToast('Timetable updated', 'success');

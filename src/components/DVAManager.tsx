@@ -3,6 +3,7 @@ import { supabase } from '../services/supabaseClient';
 import type { Student, DedicatedVirtualAccount, BankProvider, PaystackApiSettings } from '../types';
 import Spinner from './common/Spinner';
 import * as paystackService from '../services/paystackService';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface DVAManagerProps {
     students: Student[];
@@ -51,7 +52,8 @@ const DVAManager: React.FC<DVAManagerProps> = ({ students, schoolId, campusId, a
                     setBankProviders(providers);
                 } catch (error: any) {
                     console.error('Error fetching bank providers:', error);
-                    addToast('Failed to fetch bank providers: ' + error.message, 'error');
+                    const userFriendlyMessage = mapSupabaseError(error);
+                    addToast('Failed to fetch bank providers: ' + userFriendlyMessage, 'error');
                 }
             }
 
@@ -136,7 +138,8 @@ const DVAManager: React.FC<DVAManagerProps> = ({ students, schoolId, campusId, a
             setSelectedBank('');
         } catch (error: any) {
             console.error('Error creating DVA:', error);
-            addToast('Failed to create DVA: ' + error.message, 'error');
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast('Failed to create DVA: ' + userFriendlyMessage, 'error');
         } finally {
             setCreating(false);
         }
@@ -173,7 +176,8 @@ const DVAManager: React.FC<DVAManagerProps> = ({ students, schoolId, campusId, a
             addToast('Virtual account deactivated successfully', 'success');
         } catch (error: any) {
             console.error('Error deactivating DVA:', error);
-            addToast('Failed to deactivate DVA: ' + error.message, 'error');
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast('Failed to deactivate DVA: ' + userFriendlyMessage, 'error');
         }
     };
 

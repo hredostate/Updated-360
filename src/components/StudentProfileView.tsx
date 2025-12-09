@@ -8,6 +8,7 @@ import { WandIcon, TrashIcon } from './common/icons';
 import { VIEWS } from '../constants';
 import ParentCommunicationModal from './ParentCommunicationModal';
 import { supa as supabase } from '../offline/client';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface StudentProfileViewProps {
     student: Student;
@@ -199,7 +200,8 @@ const StudentProfileView: React.FC<StudentProfileViewProps> = ({
         });
 
         if (error) {
-            addToast(`Error: ${error.message}`, 'error');
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast(`Error: ${userFriendlyMessage}`, 'error');
         } else if (data) {
             setInitialPassword(data);
             addToast("Password retrieved. It will be hidden in 15 seconds.", 'info');
