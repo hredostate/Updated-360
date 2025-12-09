@@ -25,6 +25,7 @@ import { todayISO, checkInToday, checkOutToday, uploadCheckinPhoto } from '../se
 import { aiClient } from '../services/aiClient';
 import { textFromGemini } from '../utils/ai';
 import { extractAndParseJson } from '../utils/json';
+import { fetchAllStudents } from '../utils/studentPagination';
 
 export const useAppLogic = () => {
   // --- State ---
@@ -184,7 +185,7 @@ export const useAppLogic = () => {
                 supabase.from('roles').select('*'),
                 supabase.from('user_role_assignments').select('*'),
                 supabase.from('user_profiles').select('*').order('name'),
-                supabase.from('students').select('*, class:classes(name), arm:arms(name)').order('name'),
+                fetchAllStudents(), // Use pagination to support schools with more than 1000 students
                 supabase.from('reports').select('*, author:user_profiles(name, role), assignee:user_profiles(name)').order('created_at', { ascending: false }),
                 supabase.from('tasks').select('*').order('due_date'),
                 supabase.from('announcements').select('*, author:user_profiles(name)').order('created_at', { ascending: false }),

@@ -15,6 +15,7 @@ import { queueStore } from './offline/db';
 import { VIEWS } from './constants';
 import { checkInToday, checkOutToday, todayISO } from './services/checkins';
 import { lazyWithRetry } from './utils/lazyWithRetry';
+import { fetchAllStudents } from './utils/studentPagination';
 
 import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
@@ -786,9 +787,8 @@ const App: React.FC = () => {
                         };
                         
                         const fetchStudents = async () => {
-                             const { data, error } = await supabase.from('students').select('*, class:class_id(id, name), arm:arm_id(id, name)');
-                             if (error) throw error;
-                             return data ?? [];
+                             // Use pagination to support schools with more than 1000 students
+                             return await fetchAllStudents('*, class:class_id(id, name), arm:arm_id(id, name)', 'name');
                         };
                         
                         const fetchOrders = async () => {
@@ -2245,8 +2245,8 @@ const App: React.FC = () => {
             }
 
             // Refresh student data to reflect the deleted account
-            const { data: updatedStudents } = await supabase.from('students').select('*, class:classes(*), arm:arms(*)');
-            if (updatedStudents) setStudents(updatedStudents);
+            const updatedStudents = await fetchAllStudents('*, class:classes(*), arm:arms(*)', 'name');
+            setStudents(updatedStudents);
 
             return true;
         } catch (e: any) {
@@ -2293,11 +2293,9 @@ const App: React.FC = () => {
             // Refresh student data to reflect the deleted accounts
             // Add a small delay to ensure database triggers have completed
             await new Promise(resolve => setTimeout(resolve, 1000));
-            const { data: updatedStudents } = await supabase.from('students').select('*, class:classes(*), arm:arms(*)');
-            if (updatedStudents) {
-                setStudents(updatedStudents);
-                console.log(`Refreshed student data: ${updatedStudents.length} students`);
-            }
+            const updatedStudents = await fetchAllStudents('*, class:classes(*), arm:arms(*)', 'name');
+            setStudents(updatedStudents);
+            console.log(`Refreshed student data: ${updatedStudents.length} students`);
 
             const message = data.deleted === data.total 
                 ? `Successfully deleted ${data.deleted} account${data.deleted !== 1 ? 's' : ''}`
