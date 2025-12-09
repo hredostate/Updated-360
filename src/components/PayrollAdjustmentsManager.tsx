@@ -6,6 +6,7 @@ import Spinner from './common/Spinner';
 import { PlusCircleIcon, TrashIcon, SearchIcon, EditIcon } from './common/icons';
 import SearchableSelect from './common/SearchableSelect';
 import Pagination from './common/Pagination';
+import { mapSupabaseError } from '../utils/errorHandling';
 
 interface PayrollAdjustmentsManagerProps {
     users: UserProfile[];
@@ -90,7 +91,8 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
             // Update existing
             const { error } = await supabase.from('payroll_adjustments').update({ ...rest, amount }).eq('id', id);
              if (error) {
-                addToast(`Failed to update adjustment: ${error.message}`, 'error');
+                const userFriendlyMessage = mapSupabaseError(error);
+                addToast(`Failed to update adjustment: ${userFriendlyMessage}`, 'error');
                 return false;
             } else {
                 addToast('Adjustment updated successfully.', 'success');
@@ -110,7 +112,8 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
             const { error } = await supabase.from('payroll_adjustments').insert(recordsToInsert);
             
             if (error) {
-                addToast(`Failed to save adjustments: ${error.message}`, 'error');
+                const userFriendlyMessage = mapSupabaseError(error);
+                addToast(`Failed to save adjustments: ${userFriendlyMessage}`, 'error');
                 return false;
             } else {
                 addToast('Adjustments saved successfully.', 'success');
@@ -124,7 +127,8 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
         if (window.confirm('Are you sure you want to delete this unprocessed adjustment?')) {
             const { error } = await supabase.from('payroll_adjustments').delete().eq('id', id);
             if (error) {
-                addToast(`Failed to delete: ${error.message}`, 'error');
+                const userFriendlyMessage = mapSupabaseError(error);
+                addToast(`Failed to delete: ${userFriendlyMessage}`, 'error');
             } else {
                 addToast('Adjustment deleted.', 'success');
                 await fetchData();
