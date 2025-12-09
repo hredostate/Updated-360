@@ -8,6 +8,46 @@ import { aiClient } from '../services/aiClient';
 import { textFromGemini } from '../utils/ai';
 import { supa as supabase } from '../offline/client';
 
+// Workload thresholds
+const WORKLOAD_THRESHOLDS = {
+    OVERBOOKED_ASSIGNMENTS: 6,
+    OVERBOOKED_PERIODS: 30,
+    UNDERUTILIZED_ASSIGNMENTS: 2,
+    UNDERUTILIZED_PERIODS: 10,
+    TYPICAL_ASSIGNMENTS_MIN: 3,
+    TYPICAL_ASSIGNMENTS_MAX: 5,
+    TYPICAL_PERIODS_MIN: 20,
+    TYPICAL_PERIODS_MAX: 30,
+    TYPICAL_HOURS_MIN: 15,
+    TYPICAL_HOURS_MAX: 25
+};
+
+// Reference date for time duration calculation
+const TIME_CALC_REFERENCE_DATE = '2000-01-01';
+
+// Helper function to format teaching hours consistently
+const formatTeachingHours = (hours: number): string => hours.toFixed(1);
+
+// Helper function to calculate duration between two time strings
+const calculateTimeDuration = (startTime: string, endTime: string): number => {
+    const start = new Date(`${TIME_CALC_REFERENCE_DATE}T${startTime}`);
+    const end = new Date(`${TIME_CALC_REFERENCE_DATE}T${endTime}`);
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Convert to hours
+};
+
+// Helper function to format teacher workload data for AI prompt
+const formatTeacherWorkloadForAI = (teacher: {
+    teacherName: string;
+    assignmentCount: number;
+    periodsPerWeek: number;
+    teachingHoursPerWeek: number;
+    classes: string[];
+    subjects: string[];
+}): string => {
+    return `- ${teacher.teacherName}: ${teacher.assignmentCount} assignments, ${teacher.periodsPerWeek} periods/week (${formatTeachingHours(teacher.teachingHoursPerWeek)} hours)
+  Classes: ${teacher.classes.join(', ') || 'none'}, Subjects: ${teacher.subjects.join(', ') || 'none'}`;
+};
+
 interface WorkloadAnalysis {
     teacherId: string;
     teacherName: string;
@@ -214,13 +254,6 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                 if (entriesError) {
                     console.error('Error fetching timetable entries:', entriesError);
                 } else if (timetableEntries) {
-                    // Count periods per teacher
-                    timetableEntries.forEach((entry: TimetableEntry) => {
-                        if (entry.teacher_id && teacherWorkloads[entry.teacher_id]) {
-                            teacherWorkloads[entry.teacher_id].periodsPerWeek++;
-                        }
-                    });
-                    
                     // Fetch timetable periods to calculate hours
                     const { data: timetablePeriods, error: periodsError } = await supabase
                         .from('timetable_periods')
@@ -233,19 +266,18 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                         const periodDurations: { [key: number]: number } = {};
                         timetablePeriods.forEach((period: TimetablePeriod) => {
                             if (period.type === 'lesson' && period.start_time && period.end_time) {
-                                // Calculate duration in hours
-                                const start = new Date(`2000-01-01T${period.start_time}`);
-                                const end = new Date(`2000-01-01T${period.end_time}`);
-                                const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                                periodDurations[period.id] = durationHours;
+                                periodDurations[period.id] = calculateTimeDuration(period.start_time, period.end_time);
                             }
                         });
                         
-                        // Calculate teaching hours for each teacher
+                        // Count periods and calculate hours in a single pass
                         timetableEntries.forEach((entry: TimetableEntry) => {
-                            if (entry.teacher_id && entry.period_id && teacherWorkloads[entry.teacher_id]) {
-                                const duration = periodDurations[entry.period_id] || 0;
-                                teacherWorkloads[entry.teacher_id].teachingHoursPerWeek += duration;
+                            if (entry.teacher_id && teacherWorkloads[entry.teacher_id]) {
+                                teacherWorkloads[entry.teacher_id].periodsPerWeek++;
+                                if (entry.period_id) {
+                                    const duration = periodDurations[entry.period_id] || 0;
+                                    teacherWorkloads[entry.teacher_id].teachingHoursPerWeek += duration;
+                                }
                             }
                         });
                     }
@@ -275,12 +307,11 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                 - A teacher with many assignments but few scheduled periods may need timetable updates
                 - A teacher with few assignments but many periods is overbooked on the timetable
                 - Consider that some teachers may not have timetable data entered yet (periodsPerWeek = 0)
-                - A typical teacher should handle 3-5 subject assignments across 2-4 classes
-                - A typical teacher should have 20-30 periods per week (approximately 15-25 teaching hours)
+                - A typical teacher should handle ${WORKLOAD_THRESHOLDS.TYPICAL_ASSIGNMENTS_MIN}-${WORKLOAD_THRESHOLDS.TYPICAL_ASSIGNMENTS_MAX} subject assignments across 2-4 classes
+                - A typical teacher should have ${WORKLOAD_THRESHOLDS.TYPICAL_PERIODS_MIN}-${WORKLOAD_THRESHOLDS.TYPICAL_PERIODS_MAX} periods per week (approximately ${WORKLOAD_THRESHOLDS.TYPICAL_HOURS_MIN}-${WORKLOAD_THRESHOLDS.TYPICAL_HOURS_MAX} teaching hours)
                 
                 Teacher Workload Data:
-                ${workloadData.map(t => `- ${t.teacherName}: ${t.assignmentCount} assignments, ${t.periodsPerWeek} periods/week (${t.teachingHoursPerWeek.toFixed(1)} hours)
-  Classes: ${t.classes.join(', ') || 'none'}, Subjects: ${t.subjects.join(', ') || 'none'}`).join('\n')}
+                ${workloadData.map(formatTeacherWorkloadForAI).join('\n')}
                 
                 Respond in JSON format:
                 {
@@ -322,16 +353,16 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                 if (teacher.assignmentCount === 0 && !hasTimetableData) {
                     status = 'none';
                     recommendation = 'No assignments or timetable entries. Consider assigning subjects to this teacher.';
-                } else if (teacher.assignmentCount > 6 || (hasTimetableData && teacher.periodsPerWeek > 30)) {
+                } else if (teacher.assignmentCount > WORKLOAD_THRESHOLDS.OVERBOOKED_ASSIGNMENTS || (hasTimetableData && teacher.periodsPerWeek > WORKLOAD_THRESHOLDS.OVERBOOKED_PERIODS)) {
                     status = 'overbooked';
-                    if (teacher.assignmentCount > 6 && teacher.periodsPerWeek > 30) {
+                    if (teacher.assignmentCount > WORKLOAD_THRESHOLDS.OVERBOOKED_ASSIGNMENTS && teacher.periodsPerWeek > WORKLOAD_THRESHOLDS.OVERBOOKED_PERIODS) {
                         recommendation = 'High workload in both assignments and scheduled periods. Consider redistributing.';
-                    } else if (teacher.assignmentCount > 6) {
+                    } else if (teacher.assignmentCount > WORKLOAD_THRESHOLDS.OVERBOOKED_ASSIGNMENTS) {
                         recommendation = 'High number of assignments. Consider redistributing some assignments.';
                     } else {
                         recommendation = 'High number of scheduled periods. Consider adjusting timetable.';
                     }
-                } else if (teacher.assignmentCount < 2 && (!hasTimetableData || teacher.periodsPerWeek < 10)) {
+                } else if (teacher.assignmentCount < WORKLOAD_THRESHOLDS.UNDERUTILIZED_ASSIGNMENTS && (!hasTimetableData || teacher.periodsPerWeek < WORKLOAD_THRESHOLDS.UNDERUTILIZED_PERIODS)) {
                     status = 'underutilized';
                     if (!hasTimetableData) {
                         recommendation = 'Low workload. Timetable data not available. Consider adding more assignments.';
@@ -448,7 +479,7 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                                         <p><strong>Subjects:</strong> {teacher.subjects.join(', ') || 'None'}</p>
                                         {teacher.periodsPerWeek > 0 ? (
                                             <>
-                                                <p><strong>Timetable:</strong> {teacher.periodsPerWeek} periods/week ({teacher.teachingHoursPerWeek.toFixed(1)} hours)</p>
+                                                <p><strong>Timetable:</strong> {teacher.periodsPerWeek} periods/week ({formatTeachingHours(teacher.teachingHoursPerWeek)} hours)</p>
                                             </>
                                         ) : (
                                             <p><strong>Timetable:</strong> <span className="text-orange-600 dark:text-orange-400">Not configured</span></p>
