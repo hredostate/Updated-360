@@ -65,8 +65,7 @@ export const mapSupabaseError = (error: unknown): string => {
             message.includes('invalid login credentials') ||
             message.includes('email not confirmed') ||
             message.includes('user not found') ||
-            code === '401' ||
-            code === 'PGRST301'
+            code === '401'
         ) {
             return 'Authentication failed. Please check your credentials and try again.';
         }
@@ -79,7 +78,7 @@ export const mapSupabaseError = (error: unknown): string => {
             message.includes('row-level security') ||
             message.includes('rls') ||
             code === '403' ||
-            code === 'PGRST301'
+            code === 'PGRST301' // PostgreSQL REST API error for permissions/auth
         ) {
             return 'You do not have permission to perform this action.';
         }
@@ -151,7 +150,7 @@ export const mapSupabaseError = (error: unknown): string => {
                 'tls',
             ];
 
-            const isTechnical = technicalTerms.some(term => message.includes(term.toLowerCase()));
+            const isTechnical = technicalTerms.some(term => message.includes(term));
             
             if (isTechnical) {
                 return 'An error occurred while processing your request. Please try again or contact support.';
