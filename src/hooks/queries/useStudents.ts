@@ -1,17 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../services/supabaseClient';
 import type { Student } from '../../types';
+import { fetchAllStudents } from '../../utils/studentPagination';
 
 export const useStudents = (enabled = true) => {
   return useQuery({
     queryKey: ['students'],
     queryFn: async (): Promise<Student[]> => {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*, class:classes(name), arm:arms(name)')
-        .order('name');
-      if (error) throw error;
-      return data || [];
+      // Use pagination to support schools with more than 1000 students
+      return await fetchAllStudents();
     },
     enabled,
   });
