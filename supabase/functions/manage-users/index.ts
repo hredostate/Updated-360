@@ -147,23 +147,15 @@ serve(async (req) => {
                     existingStudent = data;
                 }
 
-                // If existing student already has an account, delete and clear user_id
+                // If existing student already has an account, skip them
                 if (existingStudent?.user_id) {
-                    // Delete existing auth user to "reset" the account
-                    try {
-                        await supabaseAdmin.auth.admin.deleteUser(existingStudent.user_id);
-                        // Also manually clear the user_id from the student record for safety
-                        const { error: clearError } = await supabaseAdmin
-                            .from('students')
-                            .update({ user_id: null })
-                            .eq('id', existingStudent.id);
-                        if (clearError) {
-                            console.warn(`Could not clear user_id for ${studentName}:`, clearError);
-                        }
-                        console.log(`Deleted existing auth account and cleared user_id for ${studentName}`);
-                    } catch (e) {
-                        console.warn(`Could not delete existing account for ${studentName}:`, e);
-                    }
+                    console.log(`Skipping ${studentName} - account already exists`);
+                    results.push({ 
+                        name: studentName, 
+                        status: 'Skipped', 
+                        error: 'Account already exists' 
+                    });
+                    continue;
                 }
 
                 // Generate username and password

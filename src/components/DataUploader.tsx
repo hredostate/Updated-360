@@ -99,8 +99,8 @@ const ResultsModal: React.FC<{
                 <h2 className="text-xl font-bold text-slate-800 dark:text-white">Upload Results</h2>
                 
                 <div className="my-4 p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
-                    <p className="font-bold">Important: Download Credentials Now</p>
-                    <p className="text-sm mt-1">For security, usernames and temporary passwords are shown only once. Please export the CSV and store it securely before closing this window. Students should use their username (not email) to login.</p>
+                    <p className="font-bold">Important: Download New Credentials Now</p>
+                    <p className="text-sm mt-1">For security, usernames and temporary passwords are shown only once for newly created accounts. Please export the CSV and store it securely before closing this window. Students should use their username (not email) to login. Students with existing accounts are shown as "Skipped".</p>
                 </div>
 
                 <div className="flex-grow my-4 overflow-y-auto border-y border-slate-200/60 dark:border-slate-700/60">
@@ -120,10 +120,14 @@ const ResultsModal: React.FC<{
                                     <td className="px-4 py-2 font-mono text-blue-600 dark:text-blue-400">{res.username || res.email || '-'}</td>
                                     <td className="px-4 py-2 font-mono">{res.password || 'N/A'}</td>
                                     <td className="px-4 py-2">
-                                        {res.status === 'Failed' || res.status === 'Error' ? (
+                                        {res.status === 'Skipped' ? (
+                                            <div className="flex flex-col">
+                                                <span className="text-yellow-600 font-bold">Skipped</span>
+                                                <span className="text-xs text-yellow-500">{res.error || 'Account already exists'}</span>
+                                            </div>
+                                        ) : res.status === 'Failed' || res.status === 'Error' ? (
                                             <div className="flex flex-col">
                                                 <span className="text-red-600 font-bold">Failed</span>
-                                                {/* @ts-ignore - Error prop might exist on failed items */}
                                                 <span className="text-xs text-red-500">{res.error || 'Unknown error'}</span>
                                             </div>
                                         ) : (
@@ -278,7 +282,7 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onBulkAddStudents, addToast
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Bulk Data Uploader</h1>
                     <p className="text-slate-600 dark:text-slate-300 mt-1">
                         Create student accounts by uploading a CSV file. 
-                        Existing students (matched by Admission No. or Name) will have their accounts reset with new credentials.
+                        Students with existing accounts will be skipped. Only new students without accounts will have credentials generated.
                     </p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 backdrop-blur-xl shadow-xl dark:border-slate-800/60 dark:bg-slate-900/40">
@@ -286,7 +290,7 @@ const DataUploader: React.FC<DataUploaderProps> = ({ onBulkAddStudents, addToast
                     <p className="text-sm text-slate-500 mt-2">
                         Recommended headers: <code>name</code>, <code>admission_number</code>, <code>class_name</code>, <code>arm_name</code>.
                         <br/>
-                        The 'class_name' should match a class in the system (e.g., "JSS 1"). If <code>admission_number</code> matches an existing record, it will be overwritten.
+                        The 'class_name' should match a class in the system (e.g., "JSS 1"). Students with existing accounts will be skipped.
                     </p>
                     <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-500 dark:bg-blue-900/20 dark:border-blue-700">
                         <p className="text-sm text-blue-800 dark:text-blue-200">
