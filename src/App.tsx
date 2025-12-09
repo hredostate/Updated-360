@@ -788,7 +788,7 @@ const App: React.FC = () => {
                         
                         const fetchStudents = async () => {
                              // Use pagination to support schools with more than 1000 students
-                             return await fetchAllStudents('*, class:class_id(id, name), arm:arm_id(id, name)', 'name');
+                             return await fetchAllStudents('*, class:classes(name), arm:arms(name)', 'name');
                         };
                         
                         const fetchOrders = async () => {
@@ -2245,7 +2245,7 @@ const App: React.FC = () => {
             }
 
             // Refresh student data to reflect the deleted account
-            const updatedStudents = await fetchAllStudents('*, class:classes(*), arm:arms(*)', 'name');
+            const updatedStudents = await fetchAllStudents('*, class:classes(name), arm:arms(name)', 'name');
             setStudents(updatedStudents);
 
             return true;
@@ -2293,7 +2293,7 @@ const App: React.FC = () => {
             // Refresh student data to reflect the deleted accounts
             // Add a small delay to ensure database triggers have completed
             await new Promise(resolve => setTimeout(resolve, 1000));
-            const updatedStudents = await fetchAllStudents('*, class:classes(*), arm:arms(*)', 'name');
+            const updatedStudents = await fetchAllStudents('*, class:classes(name), arm:arms(name)', 'name');
             setStudents(updatedStudents);
             console.log(`Refreshed student data: ${updatedStudents.length} students`);
 
