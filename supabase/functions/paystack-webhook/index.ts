@@ -38,6 +38,106 @@ interface WebhookEvent {
 }
 
 /**
+ * Send WhatsApp payment receipt to parent
+ */
+async function sendWhatsAppPaymentReceipt(
+  supabaseAdmin: any,
+  schoolId: number,
+  studentId: number,
+  amountPaid: number,
+  reference: string,
+  paymentDate: string,
+  totalPaid: number,
+  totalAmount: number,
+  paymentMethod: string
+) {
+  try {
+    // Get student details
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('students')
+      .select('name, parent_phone_number_1')
+      .eq('id', studentId)
+      .single();
+
+    if (studentError || !student || !student.parent_phone_number_1) {
+      console.log('Cannot send receipt: No parent phone number found for student', studentId);
+      return;
+    }
+
+    const remainingBalance = totalAmount - totalPaid;
+    const formattedDate = new Date(paymentDate).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    // Prepare WhatsApp message
+    const message = `Dear Parent,\n\nPayment Receipt Confirmation\n\n` +
+      `Student: ${student.name}\n` +
+      `Amount Paid: ₦${amountPaid.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+      `Payment Method: ${paymentMethod}\n` +
+      `Reference: ${reference}\n` +
+      `Date: ${formattedDate}\n` +
+      `Total Paid: ₦${totalPaid.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+      `Remaining Balance: ₦${remainingBalance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n\n` +
+      `Thank you for your payment.\n\n` +
+      `School Guardian 360`;
+
+    // Get Termii settings
+    const { data: termiiSettings } = await supabaseAdmin
+      .from('termii_settings')
+      .select('api_key, device_id, base_url, is_active')
+      .eq('school_id', schoolId)
+      .eq('is_active', true)
+      .single();
+
+    if (!termiiSettings) {
+      console.log('Termii not configured for school', schoolId);
+      return;
+    }
+
+    // Send via Termii
+    const termiiUrl = `${termiiSettings.base_url || 'https://api.ng.termii.com'}/api/sms/send`;
+    const termiiPayload = {
+      api_key: termiiSettings.api_key,
+      to: student.parent_phone_number_1,
+      from: 'SchoolGuardian',
+      sms: message,
+      type: 'plain',
+      channel: 'whatsapp',
+    };
+
+    const termiiResponse = await fetch(termiiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(termiiPayload),
+    });
+
+    const termiiResult = await termiiResponse.json();
+    
+    // Log the message
+    await supabaseAdmin.from('whatsapp_message_logs').insert({
+      school_id: schoolId,
+      recipient_phone: student.parent_phone_number_1,
+      template_id: null,
+      message_type: 'conversational',
+      message_content: { message, reference },
+      media_url: null,
+      termii_message_id: termiiResult.message_id,
+      status: termiiResponse.ok ? 'sent' : 'failed',
+      error_message: termiiResponse.ok ? null : (termiiResult.message || 'Failed to send'),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    console.log(`WhatsApp receipt sent to ${student.parent_phone_number_1} for payment ${reference}`);
+  } catch (error) {
+    console.error('Error sending WhatsApp receipt:', error);
+    // Don't throw - receipt sending is non-critical
+  }
+}
+
+/**
  * Paystack Webhook Handler
  * 
  * Handles webhook events from Paystack, particularly for dedicated virtual account credits.
@@ -325,6 +425,19 @@ serve(async (req) => {
 
       console.log(`Payment processed successfully: ${amount} NGN, invoice ${invoice.id} updated to ${newStatus}`);
 
+      // Send WhatsApp payment receipt to parent
+      await sendWhatsAppPaymentReceipt(
+        supabaseAdmin,
+        dvaRecord.school_id,
+        dvaRecord.student_id,
+        amount,
+        reference,
+        paidAt,
+        newAmountPaid,
+        totalAmount,
+        'Bank Transfer (DVA)'
+      );
+
       // Mark webhook as processed
       try {
         // Note: reference is stored in the payload JSONB field
@@ -351,6 +464,229 @@ serve(async (req) => {
           invoice_id: invoice.id,
           new_status: newStatus,
           reference: reference,
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Handle charge.success event (card payments)
+    if (event.event === 'charge.success') {
+      const { data } = event;
+      
+      // Validate required fields
+      if (!data.reference || !data.amount) {
+        console.error('Missing reference or amount in charge.success webhook data');
+        return new Response(JSON.stringify({ error: 'Invalid webhook data' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      const reference = data.reference;
+      const amount = data.amount / 100; // Convert from kobo to naira
+      const paidAt = data.paid_at;
+      const customerEmail = data.customer?.email;
+
+      console.log(`Processing card payment: ${amount} NGN, reference: ${reference}`);
+
+      // Check for duplicate payment (idempotency)
+      const { data: existingPayment } = await supabaseAdmin
+        .from('payments')
+        .select('id')
+        .eq('reference', reference)
+        .single();
+
+      if (existingPayment) {
+        console.log(`Payment with reference ${reference} already exists, skipping`);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Payment already processed' 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Try to find student by email or reference pattern
+      // Reference format might be: INVOICE-{invoice_id}-{timestamp} or custom format
+      let studentId: number | null = null;
+      let schoolId: number | null = null;
+      let invoiceId: number | null = null;
+
+      // First, check if reference contains invoice ID
+      const invoiceMatch = reference.match(/INVOICE-(\d+)/i);
+      if (invoiceMatch) {
+        const extractedInvoiceId = parseInt(invoiceMatch[1]);
+        const { data: invoiceData } = await supabaseAdmin
+          .from('student_invoices')
+          .select('id, student_id, term_id, total_amount, amount_paid, status')
+          .eq('id', extractedInvoiceId)
+          .single();
+
+        if (invoiceData) {
+          invoiceId = invoiceData.id;
+          
+          // Get student and school info
+          const { data: studentData } = await supabaseAdmin
+            .from('students')
+            .select('id, school_id, name, parent_phone_number_1')
+            .eq('id', invoiceData.student_id)
+            .single();
+
+          if (studentData) {
+            studentId = studentData.id;
+            schoolId = studentData.school_id;
+          }
+        }
+      }
+
+      // If we couldn't find via reference, try via customer email
+      if (!studentId && customerEmail) {
+        const { data: studentData } = await supabaseAdmin
+          .from('students')
+          .select('id, school_id, name, parent_phone_number_1')
+          .eq('email', customerEmail)
+          .single();
+
+        if (studentData) {
+          studentId = studentData.id;
+          schoolId = studentData.school_id;
+
+          // Find unpaid invoice
+          const { data: schoolConfig } = await supabaseAdmin
+            .from('school_config')
+            .select('current_term_id')
+            .eq('school_id', schoolId)
+            .single();
+
+          if (schoolConfig?.current_term_id) {
+            const { data: invoices } = await supabaseAdmin
+              .from('student_invoices')
+              .select('id, total_amount, amount_paid, status')
+              .eq('student_id', studentId)
+              .eq('term_id', schoolConfig.current_term_id)
+              .in('status', ['Unpaid', 'Partial'])
+              .order('created_at', { ascending: true });
+
+            if (invoices && invoices.length > 0) {
+              invoiceId = invoices[0].id;
+            }
+          }
+        }
+      }
+
+      // If we still don't have school info, we can't process this
+      if (!schoolId) {
+        console.log('Could not determine school for card payment, recording without association');
+        // Still record the payment but without full context
+        await supabaseAdmin.from('payments').insert({
+          school_id: null,
+          invoice_id: null,
+          amount: amount,
+          payment_date: paidAt,
+          payment_method: 'Card Payment',
+          reference: reference,
+          verified: true,
+          created_at: new Date().toISOString(),
+        });
+
+        return new Response(JSON.stringify({ 
+          success: true,
+          message: 'Payment recorded without full context'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Record payment
+      const { error: paymentError } = await supabaseAdmin.from('payments').insert({
+        school_id: schoolId,
+        invoice_id: invoiceId,
+        amount: amount,
+        payment_date: paidAt,
+        payment_method: 'Card Payment',
+        reference: reference,
+        verified: true,
+        created_at: new Date().toISOString(),
+      });
+
+      if (paymentError) {
+        console.error('Error creating payment record:', paymentError);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to record payment',
+          message: paymentError.message
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Update invoice if found
+      let newAmountPaid = amount;
+      let totalAmount = amount;
+      let newStatus = 'Paid';
+
+      if (invoiceId) {
+        const { data: invoice } = await supabaseAdmin
+          .from('student_invoices')
+          .select('id, total_amount, amount_paid, status')
+          .eq('id', invoiceId)
+          .single();
+
+        if (invoice) {
+          newAmountPaid = (parseFloat(invoice.amount_paid?.toString() || '0') + amount);
+          totalAmount = parseFloat(invoice.total_amount?.toString() || '0');
+          newStatus = newAmountPaid >= totalAmount ? 'Paid' : 'Partial';
+
+          await supabaseAdmin
+            .from('student_invoices')
+            .update({
+              amount_paid: newAmountPaid,
+              status: newStatus,
+            })
+            .eq('id', invoice.id);
+
+          console.log(`Card payment processed: ${amount} NGN, invoice ${invoice.id} updated to ${newStatus}`);
+        }
+      }
+
+      // Send WhatsApp receipt if we have student info
+      if (studentId) {
+        await sendWhatsAppPaymentReceipt(
+          supabaseAdmin,
+          schoolId,
+          studentId,
+          amount,
+          reference,
+          paidAt,
+          newAmountPaid,
+          totalAmount,
+          'Card Payment'
+        );
+      }
+
+      // Mark webhook as processed
+      try {
+        await supabaseAdmin
+          .from('webhook_events')
+          .update({ processed: true, processed_at: new Date().toISOString() })
+          .eq('event_type', event.event)
+          .filter('payload->>reference', 'eq', reference);
+      } catch (error: any) {
+        console.log('Could not update webhook_events table:', error?.message);
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'Card payment processed successfully',
+        data: {
+          amount: amount,
+          reference: reference,
+          invoice_id: invoiceId,
+          new_status: newStatus,
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
