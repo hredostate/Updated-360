@@ -53,7 +53,7 @@ export async function fetchAllStudents(
   }
 
   if (page >= MAX_PAGES && hasMore) {
-    throw new Error(`Maximum page limit (${MAX_PAGES}) exceeded while fetching students. This suggests there may be more than ${MAX_PAGES * pageSize} students.`);
+    throw new Error(`Maximum page limit (${MAX_PAGES}) exceeded while fetching students. This suggests there may be more than ${MAX_PAGES * DEFAULT_PAGE_SIZE} students.`);
   }
 
   return allStudents;
