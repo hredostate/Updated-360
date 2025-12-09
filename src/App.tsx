@@ -467,7 +467,7 @@ const App: React.FC = () => {
     };
 
     // Audit logging helper function
-    const logAuditAction = useCallback(async (action: string, details: any = {}) => {
+    const logAuditAction = useCallback(async (action: string, details: Record<string, unknown> = {}) => {
         if (!userProfile || !supabase) return;
         try {
             await supabase.from('audit_log').insert({
