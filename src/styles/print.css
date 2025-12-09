@@ -1,0 +1,323 @@
+/* Print-specific styles for report cards and other printable content */
+
+@media print {
+  /* Hide non-essential elements */
+  .no-print,
+  header,
+  nav,
+  .sidebar,
+  button:not(.print-only),
+  .feedback-widget,
+  .toast,
+  .modal-backdrop,
+  footer:not(.report-card footer) {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  /* Alternative page size for Letter format */
+  @page :letter {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  /* General print styles */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Report card specific styles */
+  .report-card {
+    page-break-after: always;
+    page-break-inside: avoid;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0.5cm;
+    background: white !important;
+  }
+
+  /* Prevent page breaks inside these elements */
+  .report-card table,
+  .report-card .student-info,
+  .report-card .remarks,
+  .report-card .signatures {
+    page-break-inside: avoid;
+  }
+
+  /* Table styles for print */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #000 !important;
+    padding: 8px;
+    text-align: left;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
+
+  table tbody {
+    display: table-row-group;
+  }
+
+  /* Images */
+  img {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  /* Links */
+  a {
+    text-decoration: none;
+    color: black;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Lists */
+  ul, ol {
+    page-break-inside: avoid;
+  }
+
+  /* Borders and backgrounds */
+  .border,
+  .border-t,
+  .border-b,
+  .border-l,
+  .border-r {
+    border-color: black !important;
+  }
+
+  /* Text colors for print */
+  .text-green-600 { color: #059669 !important; }
+  .text-blue-600 { color: #2563eb !important; }
+  .text-yellow-600 { color: #d97706 !important; }
+  .text-orange-600 { color: #ea580c !important; }
+  .text-red-600 { color: #dc2626 !important; }
+  .text-gray-600 { color: #4b5563 !important; }
+  .text-gray-700 { color: #374151 !important; }
+  .text-gray-800 { color: #1f2937 !important; }
+
+  /* Background colors for print */
+  .bg-gray-50 { background-color: #f9fafb !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-gray-200 { background-color: #e5e7eb !important; }
+  .bg-blue-50 { background-color: #eff6ff !important; }
+  .bg-blue-100 { background-color: #dbeafe !important; }
+  .bg-blue-600 { background-color: #2563eb !important; }
+
+  /* Remove shadows and effects */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  /* Rounded corners - keep for aesthetics but reduce */
+  .rounded,
+  .rounded-lg,
+  .rounded-xl {
+    border-radius: 4px !important;
+  }
+
+  /* Print buttons */
+  .print-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 1000;
+  }
+
+  @media print {
+    .print-button {
+      display: none !important;
+    }
+  }
+
+  /* Batch print - multiple report cards */
+  .batch-print .report-card {
+    page-break-after: always;
+  }
+
+  .batch-print .report-card:last-child {
+    page-break-after: auto;
+  }
+
+  /* Data table prints */
+  .data-table {
+    font-size: 10pt;
+  }
+
+  .data-table th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold;
+  }
+
+  /* Chart prints - ensure visibility */
+  .recharts-wrapper {
+    page-break-inside: avoid;
+  }
+
+  /* Footer for report cards */
+  .report-card-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #6b7280;
+    padding: 5px;
+  }
+
+  /* Watermark support */
+  .watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 72pt;
+    color: rgba(0, 0, 0, 0.05);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Hide dark mode specific elements in print */
+  .dark\:bg-slate-800,
+  .dark\:bg-slate-700,
+  .dark\:text-white {
+    background-color: white !important;
+    color: black !important;
+  }
+
+  /* Ensure proper spacing */
+  .space-y-4 > * + * {
+    margin-top: 1rem !important;
+  }
+
+  .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+
+  /* Grid layout adjustments */
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    margin-bottom: 1rem;
+  }
+
+  /* Signature lines */
+  .signature-line {
+    border-top: 2px solid black;
+    margin-top: 50px;
+    padding-top: 5px;
+  }
+
+  /* QR Code for digital verification (if present) */
+  .qr-code {
+    page-break-inside: avoid;
+    max-width: 100px;
+  }
+
+  /* School logo */
+  .school-logo {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+  }
+
+  /* Student photo */
+  .student-photo {
+    max-width: 120px;
+    max-height: 120px;
+    object-fit: cover;
+  }
+}
+
+/* Print preview mode (for on-screen preview before printing) */
+.print-preview {
+  background: #e5e7eb;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.print-preview .report-card {
+  background: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 0 auto 20px;
+  max-width: 21cm; /* A4 width */
+}
+
+/* Print button that appears on screen but not in print */
+.screen-print-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #2563eb;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: background 0.2s;
+}
+
+.screen-print-button:hover {
+  background: #1d4ed8;
+}
+
+@media print {
+  .screen-print-button {
+    display: none !important;
+  }
+}

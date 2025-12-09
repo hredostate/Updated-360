@@ -15,3 +15,6 @@ export { useLeaveRequests, useCreateLeaveRequest } from './useLeaveRequests';
 
 // Payroll
 export { usePayrollAdjustments } from './usePayrollAdjustments';
+
+// Announcements
+export { useAnnouncements, useAddAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement } from './useAnnouncements';

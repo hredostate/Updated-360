@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import print styles */
+@import './styles/print.css';
+
 html, body, #root {
   @apply h-full;
 }
