@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import type { AcademicTeachingAssignment, Term, AcademicClass, UserProfile, BaseDataObject } from '../types';
+import type { AcademicTeachingAssignment, Term, AcademicClass, UserProfile, BaseDataObject, TimetableEntry, TimetablePeriod } from '../types';
 import { SUBJECT_OPTIONS } from '../constants';
 import Spinner from './common/Spinner';
 import { PlusCircleIcon, SearchIcon, TrashIcon, EditIcon } from './common/icons';
 import SearchableSelect from './common/SearchableSelect';
 import { aiClient } from '../services/aiClient';
 import { textFromGemini } from '../utils/ai';
+import { supabase } from '../offline/client';
 
 interface WorkloadAnalysis {
     teacherId: string;
@@ -13,6 +14,8 @@ interface WorkloadAnalysis {
     assignmentCount: number;
     classes: string[];
     subjects: string[];
+    periodsPerWeek: number;        // Count of timetable entries
+    teachingHoursPerWeek: number;  // Calculated from period durations
     status: 'overbooked' | 'balanced' | 'underutilized' | 'none';
     recommendation?: string;
 }
@@ -26,6 +29,7 @@ interface AcademicAssignmentManagerProps {
     arms: BaseDataObject[];
     students: Student[];
     academicClassStudents: AcademicClassStudent[];
+    userProfile?: UserProfile;  // Current user's profile for filtering
     onSave: (as: Partial<AcademicTeachingAssignment>) => Promise<boolean>;
     onDelete: (asId: number) => Promise<boolean>;
     onUpdateClassEnrollment: (classId: number, termId: number, studentIds: number[]) => Promise<boolean>;
@@ -40,6 +44,7 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
     arms, 
     students, 
     academicClassStudents, 
+    userProfile,
     onSave, 
     onDelete,
     onUpdateClassEnrollment
@@ -52,8 +57,67 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
     const [workloadAnalysis, setWorkloadAnalysis] = useState<WorkloadAnalysis[]>([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
+    const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
 
     const teachers = useMemo(() => users.filter(u => u.role === 'Teacher' || u.role === 'Team Lead' || u.role === 'Admin' || u.role === 'Principal').sort((a,b) => a.name.localeCompare(b.name)), [users]);
+    
+    // Fetch team members if user is a Team Lead
+    useEffect(() => {
+        const fetchTeamMembers = async () => {
+            if (userProfile && userProfile.role === 'Team Lead') {
+                try {
+                    // Find team where user is the lead
+                    const { data: team, error: teamError } = await supabase
+                        .from('teams')
+                        .select('id')
+                        .eq('lead_id', userProfile.id)
+                        .single();
+                    
+                    if (teamError || !team) {
+                        console.error('Error fetching team:', teamError);
+                        return;
+                    }
+                    
+                    // Fetch team members
+                    const { data: assignments, error: assignmentsError } = await supabase
+                        .from('team_assignments')
+                        .select('user_id')
+                        .eq('team_id', team.id);
+                    
+                    if (assignmentsError) {
+                        console.error('Error fetching team assignments:', assignmentsError);
+                        return;
+                    }
+                    
+                    if (assignments) {
+                        setTeamMemberIds(assignments.map(a => a.user_id));
+                    }
+                } catch (error) {
+                    console.error('Error in fetchTeamMembers:', error);
+                }
+            }
+        };
+        
+        fetchTeamMembers();
+    }, [userProfile]);
+    
+    // Filter teachers based on user role
+    const visibleTeachers = useMemo(() => {
+        if (!userProfile) return teachers;
+        
+        // Admin and Principal can see all teachers
+        if (userProfile.role === 'Admin' || userProfile.role === 'Principal') {
+            return teachers;
+        }
+        
+        // Team Lead can only see their team members
+        if (userProfile.role === 'Team Lead' && teamMemberIds.length > 0) {
+            return teachers.filter(t => teamMemberIds.includes(t.id));
+        }
+        
+        // Default: show all (for backwards compatibility if userProfile is not provided)
+        return teachers;
+    }, [teachers, userProfile, teamMemberIds]);
     
     // Ensure we default to the active term or the most recent one
     useEffect(() => {
@@ -100,19 +164,28 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
         setIsAnalyzing(true);
         
         // Calculate assignments per teacher for selected term
-        const teacherWorkloads: { [key: string]: { count: number; classes: string[]; subjects: string[]; name: string } } = {};
+        const teacherWorkloads: { [key: string]: { 
+            count: number; 
+            classes: string[]; 
+            subjects: string[]; 
+            name: string;
+            periodsPerWeek: number;
+            teachingHoursPerWeek: number;
+        } } = {};
         
         const relevantAssignments = selectedTermId 
             ? assignments.filter(a => a.term_id === selectedTermId)
             : assignments;
         
-        // Initialize all teachers
-        teachers.forEach(t => {
+        // Initialize all visible teachers
+        visibleTeachers.forEach(t => {
             teacherWorkloads[t.id] = {
                 count: 0,
                 classes: [],
                 subjects: [],
-                name: t.name
+                name: t.name,
+                periodsPerWeek: 0,
+                teachingHoursPerWeek: 0
             };
         });
         
@@ -129,24 +202,85 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
             }
         });
         
+        // Fetch timetable data for the selected term
+        try {
+            if (selectedTermId) {
+                // Fetch timetable entries for the selected term
+                const { data: timetableEntries, error: entriesError } = await supabase
+                    .from('timetable_entries')
+                    .select('teacher_id, period_id')
+                    .eq('term_id', selectedTermId);
+                
+                if (entriesError) {
+                    console.error('Error fetching timetable entries:', entriesError);
+                } else if (timetableEntries) {
+                    // Count periods per teacher
+                    timetableEntries.forEach((entry: TimetableEntry) => {
+                        if (entry.teacher_id && teacherWorkloads[entry.teacher_id]) {
+                            teacherWorkloads[entry.teacher_id].periodsPerWeek++;
+                        }
+                    });
+                    
+                    // Fetch timetable periods to calculate hours
+                    const { data: timetablePeriods, error: periodsError } = await supabase
+                        .from('timetable_periods')
+                        .select('id, start_time, end_time, type');
+                    
+                    if (periodsError) {
+                        console.error('Error fetching timetable periods:', periodsError);
+                    } else if (timetablePeriods) {
+                        // Create a map of period_id to duration in hours
+                        const periodDurations: { [key: number]: number } = {};
+                        timetablePeriods.forEach((period: TimetablePeriod) => {
+                            if (period.type === 'lesson' && period.start_time && period.end_time) {
+                                // Calculate duration in hours
+                                const start = new Date(`2000-01-01T${period.start_time}`);
+                                const end = new Date(`2000-01-01T${period.end_time}`);
+                                const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                                periodDurations[period.id] = durationHours;
+                            }
+                        });
+                        
+                        // Calculate teaching hours for each teacher
+                        timetableEntries.forEach((entry: TimetableEntry) => {
+                            if (entry.teacher_id && entry.period_id && teacherWorkloads[entry.teacher_id]) {
+                                const duration = periodDurations[entry.period_id] || 0;
+                                teacherWorkloads[entry.teacher_id].teachingHoursPerWeek += duration;
+                            }
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching timetable data:', error);
+            // Continue with analysis even if timetable data fails
+        }
+        
         // Use AI to determine thresholds and generate recommendations
         const workloadData = Object.entries(teacherWorkloads).map(([id, data]) => ({
             teacherId: id,
             teacherName: data.name,
             assignmentCount: data.count,
             classes: data.classes,
-            subjects: data.subjects
+            subjects: data.subjects,
+            periodsPerWeek: data.periodsPerWeek,
+            teachingHoursPerWeek: data.teachingHoursPerWeek
         }));
         
         let aiRecommendations: { [key: string]: { status: string; recommendation: string } } = {};
         
         if (aiClient) {
             try {
-                const prompt = `Analyze this teacher workload data and classify each teacher as "overbooked", "balanced", or "underutilized". 
-                Consider that a typical teacher should handle 3-5 subject assignments across 2-4 classes.
+                const prompt = `Analyze this teacher workload data considering BOTH teaching assignments AND scheduled timetable periods.
+                - A teacher with many assignments but few scheduled periods may need timetable updates
+                - A teacher with few assignments but many periods is overbooked on the timetable
+                - Consider that some teachers may not have timetable data entered yet (periodsPerWeek = 0)
+                - A typical teacher should handle 3-5 subject assignments across 2-4 classes
+                - A typical teacher should have 20-30 periods per week (approximately 15-25 teaching hours)
                 
                 Teacher Workload Data:
-                ${workloadData.map(t => `- ${t.teacherName}: ${t.assignmentCount} assignments across ${t.classes.length} classes (Subjects: ${t.subjects.join(', ') || 'none'})`).join('\n')}
+                ${workloadData.map(t => `- ${t.teacherName}: ${t.assignmentCount} assignments, ${t.periodsPerWeek} periods/week (${t.teachingHoursPerWeek.toFixed(1)} hours)
+  Classes: ${t.classes.join(', ') || 'none'}, Subjects: ${t.subjects.join(', ') || 'none'}`).join('\n')}
                 
                 Respond in JSON format:
                 {
@@ -182,19 +316,35 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                 status = validStatuses.includes(aiResult.status as any) ? aiResult.status as typeof status : 'balanced';
                 recommendation = aiResult.recommendation;
             } else {
-                // Fallback logic
-                if (teacher.assignmentCount === 0) {
+                // Fallback logic considering both assignments and timetable data
+                const hasTimetableData = teacher.periodsPerWeek > 0;
+                
+                if (teacher.assignmentCount === 0 && !hasTimetableData) {
                     status = 'none';
-                    recommendation = 'No assignments. Consider assigning subjects to this teacher.';
-                } else if (teacher.assignmentCount > 6) {
+                    recommendation = 'No assignments or timetable entries. Consider assigning subjects to this teacher.';
+                } else if (teacher.assignmentCount > 6 || (hasTimetableData && teacher.periodsPerWeek > 30)) {
                     status = 'overbooked';
-                    recommendation = 'High workload. Consider redistributing some assignments.';
-                } else if (teacher.assignmentCount < 2) {
+                    if (teacher.assignmentCount > 6 && teacher.periodsPerWeek > 30) {
+                        recommendation = 'High workload in both assignments and scheduled periods. Consider redistributing.';
+                    } else if (teacher.assignmentCount > 6) {
+                        recommendation = 'High number of assignments. Consider redistributing some assignments.';
+                    } else {
+                        recommendation = 'High number of scheduled periods. Consider adjusting timetable.';
+                    }
+                } else if (teacher.assignmentCount < 2 && (!hasTimetableData || teacher.periodsPerWeek < 10)) {
                     status = 'underutilized';
-                    recommendation = 'Low workload. Consider adding more assignments.';
+                    if (!hasTimetableData) {
+                        recommendation = 'Low workload. Timetable data not available. Consider adding more assignments.';
+                    } else {
+                        recommendation = 'Low workload in both assignments and scheduled periods. Consider adding more responsibilities.';
+                    }
                 } else {
                     status = 'balanced';
-                    recommendation = 'Workload appears balanced.';
+                    if (!hasTimetableData) {
+                        recommendation = 'Assignment workload appears balanced. Timetable data not configured yet.';
+                    } else {
+                        recommendation = 'Workload appears balanced across assignments and scheduled periods.';
+                    }
                 }
             }
             
@@ -204,6 +354,8 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                 assignmentCount: teacher.assignmentCount,
                 classes: teacher.classes,
                 subjects: teacher.subjects,
+                periodsPerWeek: teacher.periodsPerWeek,
+                teachingHoursPerWeek: teacher.teachingHoursPerWeek,
                 status,
                 recommendation
             };
@@ -217,8 +369,8 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
     // Filter teachers without assignments
     const unassignedTeachers = useMemo(() => {
         const assignedTeacherIds = new Set(filteredAssignments.map(a => a.teacher_user_id));
-        return teachers.filter(t => !assignedTeacherIds.has(t.id));
-    }, [teachers, filteredAssignments]);
+        return visibleTeachers.filter(t => !assignedTeacherIds.has(t.id));
+    }, [visibleTeachers, filteredAssignments]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -291,9 +443,17 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                                         </span>
                                     </div>
                                     <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                                        <p><strong>Assignments:</strong> {teacher.assignmentCount}</p>
                                         <p><strong>Classes:</strong> {teacher.classes.join(', ') || 'None'}</p>
                                         <p><strong>Subjects:</strong> {teacher.subjects.join(', ') || 'None'}</p>
-                                        <p className="italic mt-2">{teacher.recommendation}</p>
+                                        {teacher.periodsPerWeek > 0 ? (
+                                            <>
+                                                <p><strong>Timetable:</strong> {teacher.periodsPerWeek} periods/week ({teacher.teachingHoursPerWeek.toFixed(1)} hours)</p>
+                                            </>
+                                        ) : (
+                                            <p><strong>Timetable:</strong> <span className="text-orange-600 dark:text-orange-400">Not configured</span></p>
+                                        )}
+                                        <p className="italic mt-2 pt-2 border-t border-slate-200 dark:border-slate-600">{teacher.recommendation}</p>
                                     </div>
                                 </div>
                             ))}
@@ -324,7 +484,7 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                     isSaving={isSaving}
                     terms={terms}
                     academicClasses={academicClasses}
-                    teachers={teachers}
+                    teachers={visibleTeachers}
                 />
             ) : (
                 <div className="rounded-xl border border-slate-200/60 bg-white/60 dark:border-slate-700/60 dark:bg-slate-900/40 backdrop-blur-sm shadow-sm">

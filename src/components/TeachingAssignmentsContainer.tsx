@@ -17,6 +17,7 @@ type Props = {
   terms: Term[];
   students: Student[];
   academicClassStudents: AcademicClassStudent[];
+  userProfile?: UserProfile;  // Current user's profile for filtering
   onCreateAssignment: (
     assignmentData: { teacher_user_id: string; subject_id: number; class_id: number; arm_id: number | null },
     groupData: { name: string; description: string; group_type: 'class_teacher' | 'subject_teacher' }
@@ -36,6 +37,7 @@ const TeachingAssignmentsContainer: React.FC<Props> = ({
   terms,
   students,
   academicClassStudents,
+  userProfile,
   onCreateAssignment,
   onDeleteAssignment,
   onUpdateClassEnrollment,
@@ -115,6 +117,7 @@ const TeachingAssignmentsContainer: React.FC<Props> = ({
       arms={arms}
       students={students}
       academicClassStudents={academicClassStudents}
+      userProfile={userProfile}
       onSave={handleSave}
       onDelete={handleDelete}
       onUpdateClassEnrollment={onUpdateClassEnrollment}

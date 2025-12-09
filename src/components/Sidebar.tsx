@@ -63,6 +63,7 @@ const NAV_STRUCTURE: NavGroup[] = [
       { id: VIEWS.ASSESSMENT_MANAGER, label: 'Assessments', permission: 'score_entries.edit_self' },
       { id: VIEWS.CLASSES_ATTENDANCE, label: 'Class Groups', permission: 'manage-class-groups' },
       { id: VIEWS.CURRICULUM_MANAGER, label: 'Curriculum Map', permission: 'manage-curriculum' },
+      { id: VIEWS.TEACHING_ASSIGNMENTS, label: 'Workload Analysis', permission: 'manage-curriculum' },
       { id: VIEWS.RESULT_MANAGER, label: 'Result Manager', permission: 'results.lock_and_publish' },
       { id: VIEWS.COVERAGE_FEEDBACK, label: 'Coverage Feedback', permission: 'view-coverage-feedback' },
     ]

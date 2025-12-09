@@ -458,6 +458,7 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                 terms={data.terms}
                 students={data.students}
                 academicClassStudents={data.academicClassStudents}
+                userProfile={data.userProfile}
                 onCreateAssignment={actions.handleCreateClassAssignment}
                 onDeleteAssignment={actions.handleDeleteClassAssignment}
                 onUpdateClassEnrollment={actions.handleUpdateClassEnrollment}
