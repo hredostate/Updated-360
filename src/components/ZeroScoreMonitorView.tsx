@@ -99,7 +99,7 @@ const ZeroScoreMonitorView: React.FC<ZeroScoreMonitorViewProps> = ({ userProfile
 
         // Filter by term
         if (filterTerm !== 'all') {
-            const termId = parseInt(filterTerm, 10);
+            const termId = Number(filterTerm);
             if (!isNaN(termId)) {
                 filtered = filtered.filter(e => e.term_id === termId);
             }
@@ -117,10 +117,10 @@ const ZeroScoreMonitorView: React.FC<ZeroScoreMonitorViewProps> = ({ userProfile
     }, [zeroScores, filterReviewed, filterTeacher, filterSubject, filterTerm, filterDateFrom, filterDateTo]);
 
     const uniqueTeachers = useMemo(() => {
-        const teachers = zeroScores
+        const seenIds = new Set<string>();
+        return zeroScores
             .map(z => z.teacher)
-            .filter((t, i, arr) => t && arr.findIndex(x => x?.id === t.id) === i);
-        return teachers as UserProfile[];
+            .filter(t => t && !seenIds.has(t.id) && seenIds.add(t.id)) as UserProfile[];
     }, [zeroScores]);
 
     const uniqueSubjects = useMemo(() => {
@@ -128,10 +128,10 @@ const ZeroScoreMonitorView: React.FC<ZeroScoreMonitorViewProps> = ({ userProfile
     }, [zeroScores]);
 
     const uniqueTerms = useMemo(() => {
-        const terms = zeroScores
+        const seenIds = new Set<number>();
+        return zeroScores
             .map(z => z.term)
-            .filter((t, i, arr) => t && arr.findIndex(x => x?.id === t.id) === i);
-        return terms as Term[];
+            .filter(t => t && !seenIds.has(t.id) && seenIds.add(t.id)) as Term[];
     }, [zeroScores]);
 
     const stats = useMemo(() => {
