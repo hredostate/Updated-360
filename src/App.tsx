@@ -1210,7 +1210,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const currentHash = decodeURIComponent(window.location.hash.substring(1));
-        let targetView = currentView;
+        let targetView = currentView || VIEWS.DASHBOARD;
         
         // Handle leading slash if present
         if (targetView.startsWith('/')) targetView = targetView.substring(1);
