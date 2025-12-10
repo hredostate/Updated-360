@@ -25,6 +25,11 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
     const [campusFilter, setCampusFilter] = useState<number | ''>('');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
+    
+    // Bulk selection states
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -131,9 +136,82 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
                 addToast(`Failed to delete: ${userFriendlyMessage}`, 'error');
             } else {
                 addToast('Adjustment deleted.', 'success');
+                setSelectedIds(prev => { prev.delete(id); return new Set(prev); });
                 await fetchData();
             }
         }
+    };
+
+    // Bulk delete handler
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} selected adjustment(s)?`)) {
+            return;
+        }
+        
+        setIsBulkDeleting(true);
+        const idsToDelete = Array.from(selectedIds);
+        
+        const { error } = await supabase
+            .from('payroll_adjustments')
+            .delete()
+            .in('id', idsToDelete);
+            
+        if (error) {
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast(`Failed to delete adjustments: ${userFriendlyMessage}`, 'error');
+        } else {
+            addToast(`Successfully deleted ${idsToDelete.length} adjustment(s).`, 'success');
+            setSelectedIds(new Set());
+            await fetchData();
+        }
+        setIsBulkDeleting(false);
+    };
+
+    // Bulk update handler
+    const handleBulkUpdate = async (updates: { adjustment_type?: 'addition' | 'deduction'; is_recurring?: boolean }) => {
+        if (selectedIds.size === 0) return false;
+        
+        const idsToUpdate = Array.from(selectedIds);
+        
+        const { error } = await supabase
+            .from('payroll_adjustments')
+            .update(updates)
+            .in('id', idsToUpdate);
+            
+        if (error) {
+            const userFriendlyMessage = mapSupabaseError(error);
+            addToast(`Failed to update adjustments: ${userFriendlyMessage}`, 'error');
+            return false;
+        } else {
+            addToast(`Successfully updated ${idsToUpdate.length} adjustment(s).`, 'success');
+            setSelectedIds(new Set());
+            setIsBulkUpdateOpen(false);
+            await fetchData();
+            return true;
+        }
+    };
+
+    // Selection handlers
+    const handleSelectAll = () => {
+        if (selectedIds.size === paginatedAdjustments.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(paginatedAdjustments.map(adj => adj.id)));
+        }
+    };
+
+    const handleSelectOne = (id: number) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
     };
 
     const handleEdit = (adjustment: PayrollAdjustment) => {
@@ -175,6 +253,48 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
                 </button>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-wrap gap-3 items-center justify-between animate-fade-in">
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        {selectedIds.size} adjustment(s) selected
+                    </span>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setIsBulkUpdateOpen(true)}
+                            className="px-3 py-1.5 text-sm bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 flex items-center gap-1.5"
+                        >
+                            <EditIcon className="w-4 h-4" /> Bulk Update
+                        </button>
+                        <button 
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="px-3 py-1.5 text-sm bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:bg-red-400 flex items-center gap-1.5"
+                        >
+                            {isBulkDeleting ? <Spinner size="sm" /> : <TrashIcon className="w-4 h-4" />}
+                            Delete Selected
+                        </button>
+                        <button 
+                            onClick={() => setSelectedIds(new Set())}
+                            className="px-3 py-1.5 text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600"
+                        >
+                            Clear Selection
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Update Modal */}
+            {isBulkUpdateOpen && (
+                <div className="p-4 rounded-xl border bg-slate-50 dark:bg-slate-800/50 mb-4 animate-fade-in">
+                    <BulkUpdateForm 
+                        selectedCount={selectedIds.size}
+                        onSave={handleBulkUpdate}
+                        onClose={() => setIsBulkUpdateOpen(false)}
+                    />
+                </div>
+            )}
+
             {isFormOpen && (
                 <div className="p-4 rounded-xl border bg-slate-50 dark:bg-slate-800/50 mb-4">
                     <AdjustmentForm 
@@ -187,21 +307,42 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
             )}
 
             <div className="space-y-3">
-                <h2 className="text-xl font-bold">Pending Adjustments</h2>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold">Pending Adjustments</h2>
+                    {paginatedAdjustments.length > 0 && (
+                        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                            <input 
+                                type="checkbox"
+                                checked={selectedIds.size === paginatedAdjustments.length && paginatedAdjustments.length > 0}
+                                onChange={handleSelectAll}
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                            />
+                            Select All on Page
+                        </label>
+                    )}
+                </div>
                 {isLoading && <Spinner />}
                 {!isLoading && filteredAdjustments.length === 0 && <p className="text-slate-500 text-center py-8">No pending adjustments found.</p>}
                 {!isLoading && paginatedAdjustments.map((adj) => (
-                    <div key={adj.id} className="p-3 border rounded-lg flex justify-between items-center bg-white dark:bg-slate-900 hover:shadow-md transition-shadow">
-                        <div>
-                            <p className="font-semibold">{adj.reason} <span className="text-sm font-normal text-slate-500">({adj.user?.name})</span></p>
-                            <p className={`text-lg font-bold ${adj.adjustment_type === 'addition' ? 'text-green-600' : 'text-red-600'}`}>
-                                {adj.adjustment_type === 'addition' ? '+' : '-'}₦{Math.abs(adj.amount).toLocaleString()}
-                            </p>
-                             {adj.is_recurring && <span className="text-xs font-semibold px-2 py-0.5 bg-indigo-200 text-indigo-800 rounded-full">Recurring</span>}
+                    <div key={adj.id} className={`p-3 border rounded-lg flex justify-between items-center bg-white dark:bg-slate-900 hover:shadow-md transition-shadow ${selectedIds.has(adj.id) ? 'ring-2 ring-blue-500 border-blue-300' : ''}`}>
+                        <div className="flex items-center gap-3">
+                            <input 
+                                type="checkbox"
+                                checked={selectedIds.has(adj.id)}
+                                onChange={() => handleSelectOne(adj.id)}
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div>
+                                <p className="font-semibold">{adj.reason} <span className="text-sm font-normal text-slate-500">({adj.user?.name})</span></p>
+                                <p className={`text-lg font-bold ${adj.adjustment_type === 'addition' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {adj.adjustment_type === 'addition' ? '+' : '-'}₦{Math.abs(adj.amount).toLocaleString()}
+                                </p>
+                                 {adj.is_recurring && <span className="text-xs font-semibold px-2 py-0.5 bg-indigo-200 text-indigo-800 rounded-full">Recurring</span>}
+                            </div>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => handleEdit(adj)} className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-full transition-colors"><EditIcon className="w-5 h-5"/></button>
-                            <button onClick={() => handleDelete(adj.id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition-colors"><TrashIcon className="w-5 h-5"/></button>
+                            <button onClick={() => handleEdit(adj)} className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-full transition-colors" title="Edit"><EditIcon className="w-5 h-5"/></button>
+                            <button onClick={() => handleDelete(adj.id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-full transition-colors" title="Delete"><TrashIcon className="w-5 h-5"/></button>
                         </div>
                     </div>
                 ))}
@@ -293,6 +434,112 @@ const AdjustmentForm: React.FC<{
                 <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 rounded-md text-sm font-medium">Cancel</button>
                 <button type="submit" disabled={isSaving} className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium flex items-center gap-2">
                     {isSaving ? <Spinner size="sm"/> : 'Save'}
+                </button>
+            </div>
+        </form>
+    );
+};
+
+// Bulk Update Form Component
+const BulkUpdateForm: React.FC<{
+    selectedCount: number;
+    onSave: (updates: { adjustment_type?: 'addition' | 'deduction'; is_recurring?: boolean }) => Promise<boolean>;
+    onClose: () => void;
+}> = ({ selectedCount, onSave, onClose }) => {
+    const [updateType, setUpdateType] = useState(false);
+    const [type, setType] = useState<'addition' | 'deduction'>('deduction');
+    const [updateRecurring, setUpdateRecurring] = useState(false);
+    const [isRecurring, setIsRecurring] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!updateType && !updateRecurring) {
+            return; // No updates selected
+        }
+        
+        setIsSaving(true);
+        
+        const updates: { adjustment_type?: 'addition' | 'deduction'; is_recurring?: boolean } = {};
+        if (updateType) {
+            updates.adjustment_type = type;
+        }
+        if (updateRecurring) {
+            updates.is_recurring = isRecurring;
+        }
+        
+        await onSave(updates);
+        setIsSaving(false);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
+            <div className="flex justify-between items-center mb-2">
+                <h4 className="font-bold text-slate-800 dark:text-white">Bulk Update {selectedCount} Adjustment(s)</h4>
+            </div>
+            
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+                Select the fields you want to update for all selected adjustments.
+            </p>
+            
+            <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 border rounded-lg bg-white dark:bg-slate-900">
+                    <input 
+                        type="checkbox" 
+                        id="updateType"
+                        checked={updateType} 
+                        onChange={e => setUpdateType(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                        <label htmlFor="updateType" className="block font-medium text-sm">Update Adjustment Type</label>
+                        {updateType && (
+                            <select 
+                                value={type} 
+                                onChange={e => setType(e.target.value as any)} 
+                                className="mt-2 p-2 border rounded-md w-full bg-white dark:bg-slate-800 dark:border-slate-700"
+                            >
+                                <option value="deduction">Deduction</option>
+                                <option value="addition">Addition / Reimbursement</option>
+                            </select>
+                        )}
+                    </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 border rounded-lg bg-white dark:bg-slate-900">
+                    <input 
+                        type="checkbox" 
+                        id="updateRecurring"
+                        checked={updateRecurring} 
+                        onChange={e => setUpdateRecurring(e.target.checked)}
+                        className="mt-1 w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                        <label htmlFor="updateRecurring" className="block font-medium text-sm">Update Recurring Status</label>
+                        {updateRecurring && (
+                            <label className="mt-2 flex items-center gap-2 text-sm">
+                                <input 
+                                    type="checkbox" 
+                                    checked={isRecurring} 
+                                    onChange={e => setIsRecurring(e.target.checked)}
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                                />
+                                Make selected adjustments recurring monthly
+                            </label>
+                        )}
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+                <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-md text-sm font-medium">Cancel</button>
+                <button 
+                    type="submit" 
+                    disabled={isSaving || (!updateType && !updateRecurring)} 
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium flex items-center gap-2 disabled:bg-indigo-400"
+                >
+                    {isSaving ? <Spinner size="sm"/> : 'Apply to Selected'}
                 </button>
             </div>
         </form>
