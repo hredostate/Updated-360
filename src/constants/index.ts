@@ -134,7 +134,6 @@ export const VIEWS = {
   PREDICTIVE_ANALYTICS: 'Predictive Analytics',
   SCORE_REVIEW: 'Score Review', // Team Lead/Admin view of all scores
   ZERO_SCORE_MONITOR: 'Zero Score Monitor',
-  PAYROLL: 'HR & Payroll', // Alias for HR_PAYROLL
 };
 
 export const STUDENT_STATUSES = [
