@@ -104,7 +104,7 @@ Do not include the subject name in the comment as it will be shown under the sub
 
     const response = await aiClient.models.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
     });
 
     return response.text?.trim() || `Demonstrates ${effort} effort in ${subjectName}.`;
@@ -172,7 +172,7 @@ Tone: ${tone}`;
 
     const response = await aiClient.models.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
     });
 
     return response.text?.trim() || `${studentName} has made progress this term and should continue to work hard.`;

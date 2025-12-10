@@ -264,8 +264,13 @@ export async function generateAIRiskAnalysis(
   prediction: RiskPrediction,
   additionalContext?: string
 ): Promise<string> {
+  // Fallback message when AI is not available
+  const fallbackMessage = `Student ${prediction.studentName} has been identified as ${prediction.riskLevel} risk (score: ${prediction.riskScore}/100). Key factors include: ${prediction.factors.map(f => f.name).join(', ')}. ${prediction.recommendedActions[0] || 'Immediate attention recommended.'}`;
+
+  // Check if AI client is available
   if (!aiClient) {
-    return `Student ${prediction.studentName} has been identified as ${prediction.riskLevel} risk (score: ${prediction.riskScore}/100). Key factors: ${prediction.factors.map(f => f.name).join(', ')}.`;
+    console.warn('AI client not available - API key may not be configured');
+    return `⚠️ AI Analysis Unavailable - ${fallbackMessage}`;
   }
 
   try {
@@ -285,13 +290,26 @@ Provide a brief (2-3 sentences), compassionate analysis of this student's situat
 
     const response = await aiClient.models.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
     });
 
-    return response.text || 'Analysis unavailable';
-  } catch (error) {
+    return response.text || fallbackMessage;
+  } catch (error: any) {
     console.error('AI analysis error:', error);
-    return `Student ${prediction.studentName} has been identified as ${prediction.riskLevel} risk (score: ${prediction.riskScore}/100). Immediate attention recommended.`;
+    
+    // Handle specific error types
+    if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('rate limit')) {
+      console.warn('AI rate limit reached - using fallback analysis');
+      return `⏱️ AI temporarily unavailable (rate limit) - ${fallbackMessage}`;
+    }
+    
+    if (error?.status === 401 || error?.message?.includes('401') || error?.message?.includes('API key')) {
+      console.error('AI authentication failed - check API key');
+      return `🔑 AI authentication error - ${fallbackMessage}`;
+    }
+    
+    // Generic error fallback
+    return `⚠️ AI analysis error - ${fallbackMessage}`;
   }
 }
 

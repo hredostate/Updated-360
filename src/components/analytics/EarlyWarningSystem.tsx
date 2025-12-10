@@ -29,7 +29,14 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
   const generatePredictions = async () => {
     setLoading(true);
     try {
+      if (safeStudents.length === 0) {
+        console.warn('No students available for prediction analysis');
+        setPredictions([]);
+        return;
+      }
+
       // Mock data for demonstration - in production, fetch from API
+      // TODO: Replace with actual student metrics from database
       const studentsData = safeStudents.slice(0, 20).map(student => ({
         student,
         attendanceRate: 70 + Math.random() * 30,
@@ -42,8 +49,15 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
 
       const results = await batchPredictRisks(studentsData);
       setPredictions(results);
-    } catch (error) {
+      
+      if (results.length > 0) {
+        console.log(`Successfully generated ${results.length} risk predictions`);
+      }
+    } catch (error: any) {
       console.error('Error generating predictions:', error);
+      setPredictions([]);
+      // Note: In a production app, we would show an error toast here
+      // addToast('Failed to generate predictions. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -52,14 +66,16 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
   // Get AI analysis for selected prediction
   const getAIAnalysis = async (prediction: RiskPrediction) => {
     setSelectedPrediction(prediction);
-    setAiAnalysis('Generating analysis...');
+    setAiAnalysis('Generating AI-powered analysis...');
     
     try {
       const analysis = await generateAIRiskAnalysis(prediction);
       setAiAnalysis(analysis);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting AI analysis:', error);
-      setAiAnalysis('Unable to generate analysis at this time.');
+      // Provide a meaningful fallback based on the prediction data
+      const fallback = `Student ${prediction.studentName} has been identified as ${prediction.riskLevel} risk with a score of ${prediction.riskScore}/100. Key concerns: ${prediction.factors.slice(0, 2).map(f => f.name).join(', ')}. ${prediction.recommendedActions[0] || 'Immediate attention is recommended.'}`;
+      setAiAnalysis(`⚠️ Unable to generate AI analysis at this time. ${fallback}`);
     }
   };
 

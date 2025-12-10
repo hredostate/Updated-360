@@ -318,7 +318,7 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({
                     "teacherId": { "status": "overbooked|balanced|underutilized", "recommendation": "brief recommendation" }
                 }`;
                 
-                const model = aiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
+                const model = aiClient.getGenerativeModel({ model: 'gemini-2.5-flash' });
                 const result = await model.generateContent(prompt);
                 const text = textFromGemini(result.response);
                 

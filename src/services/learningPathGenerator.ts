@@ -245,7 +245,7 @@ Provide a brief (3-4 sentences), encouraging summary of the learning path and th
 
     const response = await aiClient.models.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
     });
 
     return response.text || 'Recommendations unavailable';
