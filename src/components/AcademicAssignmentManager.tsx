@@ -4,7 +4,6 @@ import type { AcademicTeachingAssignment, Term, AcademicClass, UserProfile, Base
 import Spinner from './common/Spinner';
 import { PlusCircleIcon, SearchIcon, TrashIcon, EditIcon, RepeatIcon } from './common/icons';
 import SearchableSelect from './common/SearchableSelect';
-import { SUBJECT_OPTIONS } from '../constants';
 
 interface AcademicAssignmentManagerProps {
     assignments: AcademicTeachingAssignment[];
@@ -131,7 +130,7 @@ const ImportLegacyModal: React.FC<{
     );
 };
 
-const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({ assignments = [], terms = [], academicClasses = [], users = [], onSave, onDelete, teachingEntities = [], onImportLegacyAssignments, classes = [], arms = [] }) => {
+const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({ assignments = [], terms = [], academicClasses = [], users = [], onSave, onDelete, teachingEntities = [], onImportLegacyAssignments, classes = [], arms = [], subjects = [] }) => {
     const [editingAssignment, setEditingAssignment] = useState<Partial<AcademicTeachingAssignment> | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -222,6 +221,7 @@ const AcademicAssignmentManager: React.FC<AcademicAssignmentManagerProps> = ({ a
                     teachers={teachers}
                     classes={classes}
                     arms={arms}
+                    subjects={subjects}
                 />
             ) : (
                 <div className="rounded-xl border border-slate-200/60 bg-white/60 dark:border-slate-700/60 dark:bg-slate-900/40 backdrop-blur-sm shadow-sm">
@@ -322,7 +322,8 @@ const AssignmentForm: React.FC<{
     teachers: UserProfile[];
     classes: BaseDataObject[];
     arms: BaseDataObject[];
-}> = ({ assignment, onSave, onCancel, isSaving, terms, academicClasses, teachers, classes, arms }) => {
+    subjects: BaseDataObject[];
+}> = ({ assignment, onSave, onCancel, isSaving, terms, academicClasses, teachers, classes, arms, subjects }) => {
     const [localAs, setLocalAs] = useState(assignment);
     const [selectedLevel, setSelectedLevel] = useState<string>('');
     const [selectedArms, setSelectedArms] = useState<Set<string>>(new Set());
@@ -406,7 +407,7 @@ const AssignmentForm: React.FC<{
         }
     };
     
-    const subjectOptions = useMemo(() => SUBJECT_OPTIONS.map(s => ({ value: s, label: s })), []);
+    const subjectOptions = useMemo(() => subjects.map(s => ({ value: s.name, label: s.name })), [subjects]);
     const teacherOptions = useMemo(() => teachers.map(t => ({ value: t.id, label: t.name })), [teachers]);
     
     const canSave = bulkMode 
