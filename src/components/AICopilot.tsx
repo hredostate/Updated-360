@@ -1,12 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-// Temporarily disabled during OpenRouter migration
-import { aiClient } from '../services/aiClient';
+import OpenAI from 'openai';
+import { getAIClient, getCurrentModel } from '../services/aiClient';
 import type { UserProfile, Student, ReportRecord, Task, RoleDetails, Announcement, AssistantMessage, RoleTitle, BaseDataObject, LivingPolicySnippet, NavigationContext } from '../types';
 import { TaskPriority } from '../types';
 import { WandIcon, CloseIcon, PaperAirplaneIcon } from './common/icons';
 import Spinner from './common/Spinner';
-import { textFromGemini } from '../utils/ai';
+import { textFromAI } from '../utils/ai';
 import { PRINCIPAL_PERSONA_PROMPT, VIEWS } from '../constants';
 
 // Helper to find class by name
@@ -104,10 +104,14 @@ const AICopilot: React.FC<AICopilotProps> = (props) => {
   };
 
   const draftParentMessage = async (topic: string) => {
+      const aiClient = getAIClient();
       if (!aiClient) return JSON.stringify({ error: "AI client not available." });
       const prompt = `Draft a professional and friendly message for parents about an upcoming school event: "${topic}". The message should be suitable for a school bulletin board or email. Include a placeholder for the date and time.`;
-      const response = await aiClient.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-      return JSON.stringify({ draft: textFromGemini(response) });
+      const response = await aiClient.chat.completions.create({
+          model: getCurrentModel(),
+          messages: [{ role: 'user', content: prompt }]
+      });
+      return JSON.stringify({ draft: textFromAI(response) });
   };
   
   const handleNavigation = (viewName: string, contextData: any) => {
@@ -132,61 +136,84 @@ const AICopilot: React.FC<AICopilotProps> = (props) => {
       return JSON.stringify({ success: true, message: `Navigating to ${targetView}...` });
   }
   
-  // --- Gemini Tool Declarations ---
-  const tools: { functionDeclarations: FunctionDeclaration[] }[] = [{
-      functionDeclarations: [
-        {
-          name: 'generateWeeklySummary',
-          description: 'Generates a summary of activities for a specific class for the current week.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: { className: { type: Type.STRING, description: 'The name of the class, e.g., "JSS1", "SS 2".' } },
-            required: ['className'],
+  // --- OpenAI Tool Declarations ---
+  const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+      {
+          type: 'function',
+          function: {
+              name: 'generateWeeklySummary',
+              description: 'Generates a summary of activities for a specific class for the current week.',
+              parameters: {
+                  type: 'object',
+                  properties: { 
+                      className: { 
+                          type: 'string', 
+                          description: 'The name of the class, e.g., "JSS1", "SS 2".' 
+                      } 
+                  },
+                  required: ['className'],
+              },
           },
-        },
-        {
-          name: 'showNonCompliantTeachers',
-          description: 'Lists teachers who have not submitted their required reports this week.',
-          parameters: { type: Type.OBJECT, properties: {} },
-        },
-        {
-          name: 'draftParentMessage',
-          description: 'Drafts a message to parents about a specific topic.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: { topic: { type: Type.STRING, description: 'The subject of the message, e.g., "Science Fair", "PTA Meeting".' } },
-            required: ['topic'],
+      },
+      {
+          type: 'function',
+          function: {
+              name: 'showNonCompliantTeachers',
+              description: 'Lists teachers who have not submitted their required reports this week.',
+              parameters: { 
+                  type: 'object', 
+                  properties: {} 
+              },
           },
-        },
-        {
-            name: 'navigate_app',
-            description: 'Navigates the user to a specific feature or page in the app to perform an action. Use this when the user wants to "go to", "open", "create", or "submit" something.',
-            parameters: {
-                type: Type.OBJECT,
-                properties: {
-                    viewName: { 
-                        type: Type.STRING, 
-                        enum: ['submit_report', 'create_task', 'student_profile', 'dashboard', 'report_feed', 'lesson_planner'],
-                        description: 'The internal name of the view to navigate to.' 
-                    },
-                    contextData: {
-                        type: Type.OBJECT,
-                        description: 'Data extracted from the user request to pre-fill the form or filter the view.',
-                        properties: {
-                            studentName: { type: Type.STRING, description: 'Name of the student involved.' },
-                            reportText: { type: Type.STRING, description: 'Initial text for a report.' },
-                            reportType: { type: Type.STRING, description: 'Type of report (e.g., Incident, Observation).' },
-                            taskTitle: { type: Type.STRING, description: 'Title for a new task.' },
-                            taskDescription: { type: Type.STRING, description: 'Description for a new task.' },
-                            priority: { type: Type.STRING, enum: ['Low', 'Medium', 'High', 'Critical'] }
-                        }
-                    }
-                },
-                required: ['viewName']
-            }
-        }
-      ]
-  }];
+      },
+      {
+          type: 'function',
+          function: {
+              name: 'draftParentMessage',
+              description: 'Drafts a message to parents about a specific topic.',
+              parameters: {
+                  type: 'object',
+                  properties: { 
+                      topic: { 
+                          type: 'string', 
+                          description: 'The subject of the message, e.g., "Science Fair", "PTA Meeting".' 
+                      } 
+                  },
+                  required: ['topic'],
+              },
+          },
+      },
+      {
+          type: 'function',
+          function: {
+              name: 'navigate_app',
+              description: 'Navigates the user to a specific feature or page in the app to perform an action. Use this when the user wants to "go to", "open", "create", or "submit" something.',
+              parameters: {
+                  type: 'object',
+                  properties: {
+                      viewName: { 
+                          type: 'string', 
+                          enum: ['submit_report', 'create_task', 'student_profile', 'dashboard', 'report_feed', 'lesson_planner'],
+                          description: 'The internal name of the view to navigate to.' 
+                      },
+                      contextData: {
+                          type: 'object',
+                          description: 'Data extracted from the user request to pre-fill the form or filter the view.',
+                          properties: {
+                              studentName: { type: 'string', description: 'Name of the student involved.' },
+                              reportText: { type: 'string', description: 'Initial text for a report.' },
+                              reportType: { type: 'string', description: 'Type of report (e.g., Incident, Observation).' },
+                              taskTitle: { type: 'string', description: 'Title for a new task.' },
+                              taskDescription: { type: 'string', description: 'Description for a new task.' },
+                              priority: { type: 'string', enum: ['Low', 'Medium', 'High', 'Critical'] }
+                          }
+                      }
+                  },
+                  required: ['viewName']
+              }
+          }
+      }
+  ];
   
   // --- Main Handler ---
   const handleSubmit = async (e: React.FormEvent) => {
@@ -200,6 +227,7 @@ const AICopilot: React.FC<AICopilotProps> = (props) => {
     setIsLoading(true);
 
     try {
+        const aiClient = getAIClient();
         if (!aiClient) throw new Error("AI Client not available");
         
         const livingPolicyContext = props.livingPolicy.map(p => `- ${p.content}`).join('\n');
@@ -230,48 +258,64 @@ const AICopilot: React.FC<AICopilotProps> = (props) => {
             - Recent reports summary: ${props.reports.slice(0, 3).map(r => r.analysis?.summary).filter(Boolean).join('; ')}.
         `;
         
-        const history: Content[] = messages.map(m => ({
-            role: m.sender === 'ai' ? 'model' as const : 'user' as const,
-            parts: [{ text: m.text }]
-        }));
+        const history: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+            { role: 'system', content: systemInstruction },
+            ...messages.map(m => ({
+                role: (m.sender === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+                content: m.text
+            }))
+        ];
 
-        const response: GenerateContentResponse = await aiClient.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: [...history, { role: 'user', parts: [{ text: currentInput }] }],
-            config: { systemInstruction, tools }
+        const response = await aiClient.chat.completions.create({
+            model: getCurrentModel(),
+            messages: [...history, { role: 'user', content: currentInput }],
+            tools: tools,
+            tool_choice: 'auto'
         });
 
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            const fc = response.functionCalls[0];
+        const responseMessage = response.choices[0]?.message;
+
+        if (responseMessage?.tool_calls && responseMessage.tool_calls.length > 0) {
+            const toolCall = responseMessage.tool_calls[0];
+            const functionName = toolCall.function.name;
+            const functionArgs = JSON.parse(toolCall.function.arguments);
             let toolResult = '';
             
             setMessages(prev => [...prev, { id: `${Date.now()}-tool`, sender: 'ai', text: `One moment, I'm taking care of that...` }]);
 
-            if (fc.name === 'showNonCompliantTeachers') {
+            if (functionName === 'showNonCompliantTeachers') {
                 toolResult = getNonCompliantTeachers();
-            } else if (fc.name === 'generateWeeklySummary') {
-                toolResult = generateWeeklySummaryForClass(fc.args.className as string);
-            } else if (fc.name === 'draftParentMessage') {
-                toolResult = await draftParentMessage(fc.args.topic as string);
-            } else if (fc.name === 'navigate_app') {
-                toolResult = handleNavigation(fc.args.viewName as string, fc.args.contextData);
+            } else if (functionName === 'generateWeeklySummary') {
+                toolResult = generateWeeklySummaryForClass(functionArgs.className as string);
+            } else if (functionName === 'draftParentMessage') {
+                toolResult = await draftParentMessage(functionArgs.topic as string);
+            } else if (functionName === 'navigate_app') {
+                toolResult = handleNavigation(functionArgs.viewName as string, functionArgs.contextData);
                 // We can close the copilot or keep it open. For navigation, it's nice to minimize it so the user sees the change.
                 setIsOpen(false);
             }
             
-            const secondResponse = await aiClient.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: [
+            const secondResponse = await aiClient.chat.completions.create({
+                model: getCurrentModel(),
+                messages: [
                     ...history,
-                    { role: 'user', parts: [{ text: currentInput }] },
-                    { role: 'model', parts: [{ functionCall: fc }] },
-                    { role: 'user', parts: [{ functionResponse: { name: fc.name, response: { result: JSON.parse(toolResult) } } }] }
+                    { role: 'user', content: currentInput },
+                    responseMessage,
+                    {
+                        role: 'tool',
+                        tool_call_id: toolCall.id,
+                        content: toolResult
+                    }
                 ],
-                config: { systemInstruction, tools }
+                tools: tools,
+                tool_choice: 'auto'
             });
-            setMessages(prev => [...prev, { id: `${Date.now()}-ai`, sender: 'ai', text: textFromGemini(secondResponse) }]);
+            
+            const finalText = secondResponse.choices[0]?.message?.content || 'Done!';
+            setMessages(prev => [...prev, { id: `${Date.now()}-ai`, sender: 'ai', text: finalText }]);
         } else {
-            setMessages(prev => [...prev, { id: `${Date.now()}-ai`, sender: 'ai', text: textFromGemini(response) }]);
+            const assistantText = responseMessage?.content || 'I apologize, but I cannot process that request.';
+            setMessages(prev => [...prev, { id: `${Date.now()}-ai`, sender: 'ai', text: assistantText }]);
         }
     } catch (error) {
         console.error("AI Copilot error:", error);
@@ -287,7 +331,7 @@ const AICopilot: React.FC<AICopilotProps> = (props) => {
       {!isPageView && (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="fixed bottom-6 right-6 z-40 w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-transform hover:scale-110"
+          className="fixed bottom-24 right-6 z-40 w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-transform hover:scale-110"
           aria-label="Toggle AI Copilot"
         >
           <WandIcon className="w-8 h-8" />
