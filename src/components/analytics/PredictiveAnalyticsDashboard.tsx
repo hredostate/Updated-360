@@ -26,14 +26,17 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
   students,
   onViewStudent,
 }) => {
+  // Add null safety with default empty array
+  const safeStudents = students || [];
+
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs = [
-    { id: 'overview' as TabType, label: 'Overview', icon: TrendingUp },
-    { id: 'early-warning' as TabType, label: 'Early Warning', icon: Activity },
-    { id: 'learning-paths' as TabType, label: 'Learning Paths', icon: BookOpen },
-    { id: 'scheduler' as TabType, label: 'Smart Scheduler', icon: Calendar },
-    { id: 'reports' as TabType, label: 'Report Writer', icon: FileText },
+    { id: 'overview' as TabType, label: 'Overview', icon: TrendingUpIcon },
+    { id: 'early-warning' as TabType, label: 'Early Warning', icon: ActivityIcon },
+    { id: 'learning-paths' as TabType, label: 'Learning Paths', icon: BookOpenIcon },
+    { id: 'scheduler' as TabType, label: 'Smart Scheduler', icon: CalendarIcon },
+    { id: 'reports' as TabType, label: 'Report Writer', icon: FileTextIcon },
   ];
 
   return (
@@ -254,11 +257,11 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
         )}
 
         {activeTab === 'early-warning' && (
-          <EarlyWarningSystem students={students} onViewStudent={onViewStudent} />
+          <EarlyWarningSystem students={safeStudents} onViewStudent={onViewStudent} />
         )}
 
         {activeTab === 'learning-paths' && (
-          <PersonalizedLearningPath students={students} />
+          <PersonalizedLearningPath students={safeStudents} />
         )}
 
         {activeTab === 'scheduler' && (
@@ -266,7 +269,7 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
         )}
 
         {activeTab === 'reports' && (
-          <AutomatedReportWriter students={students} />
+          <AutomatedReportWriter students={safeStudents} />
         )}
       </div>
     </div>
