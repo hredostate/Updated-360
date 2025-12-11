@@ -77,6 +77,14 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const reportContainerRef = useRef<HTMLDivElement>(null);
 
+  // Utility function to sanitize strings for safe HTML rendering and filenames
+  const sanitizeString = (str: string): string => {
+    return str
+      .replace(/[<>]/g, '') // Remove potential HTML tags
+      .replace(/[^\w\s-]/g, '_') // Replace special chars for filenames
+      .trim();
+  };
+
   useEffect(() => {
     fetchStudentData();
   }, [classId, termId, students]);
@@ -185,6 +193,7 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
 
       if (reportError || !reportData) {
         console.error(`Error fetching report for student ${student.name}:`, reportError);
+        addToast(`Failed to fetch report for ${student.name}`, 'error');
         return null;
       }
 
@@ -236,27 +245,37 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
 
   const createReportHTML = (reportData: ReportData, student: StudentWithDebt): string => {
     const { student: studentData, term, subjects, schoolConfig: config } = reportData;
-    const averageScore = subjects.reduce((sum: number, s: any) => sum + (s.totalScore || 0), 0) / subjects.length;
+    const averageScore = subjects.reduce((sum, s) => sum + (s.totalScore || 0), 0) / subjects.length;
+
+    // Sanitize all user-provided content
+    const sanitizedSchoolName = sanitizeString(config.school_name || 'School');
+    const sanitizedAddress = sanitizeString(config.address || '');
+    const sanitizedMotto = sanitizeString(config.motto || '');
+    const sanitizedStudentName = sanitizeString(studentData.fullName || student.name);
+    const sanitizedClassName = sanitizeString(studentData.className || className);
+    const sanitizedAdmNumber = sanitizeString(student.admission_number || 'N/A');
+    const sanitizedSessionLabel = sanitizeString(term.sessionLabel || '');
+    const sanitizedTermLabel = sanitizeString(term.termLabel || '');
 
     return `
       <div style="font-family: Arial, sans-serif; color: #000; padding: 20px;">
         <!-- Header -->
         <div style="text-center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px;">
-          <h1 style="font-size: 24px; font-weight: bold; margin: 0; text-transform: uppercase;">${config.school_name || 'School'}</h1>
-          <p style="font-size: 12px; margin: 5px 0;">${config.address || ''}</p>
-          <p style="font-size: 11px; font-style: italic; margin: 5px 0;">${config.motto || ''}</p>
+          <h1 style="font-size: 24px; font-weight: bold; margin: 0; text-transform: uppercase;">${sanitizedSchoolName}</h1>
+          <p style="font-size: 12px; margin: 5px 0;">${sanitizedAddress}</p>
+          <p style="font-size: 11px; font-style: italic; margin: 5px 0;">${sanitizedMotto}</p>
           <div style="margin-top: 10px; padding: 8px 20px; background: #2563eb; color: white; display: inline-block; border-radius: 5px;">
-            <strong>${term.sessionLabel || ''} - ${term.termLabel || ''}</strong>
+            <strong>${sanitizedSessionLabel} - ${sanitizedTermLabel}</strong>
           </div>
         </div>
 
         <!-- Student Info -->
         <div style="background: #f1f5f9; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
-            <div><strong>Name:</strong> ${studentData.fullName || student.name}</div>
-            <div><strong>Class:</strong> ${studentData.className || className}</div>
-            <div><strong>Admission No:</strong> ${student.admission_number || 'N/A'}</div>
-            <div><strong>Term:</strong> ${term.termLabel || termName}</div>
+            <div><strong>Name:</strong> ${sanitizedStudentName}</div>
+            <div><strong>Class:</strong> ${sanitizedClassName}</div>
+            <div><strong>Admission No:</strong> ${sanitizedAdmNumber}</div>
+            <div><strong>Term:</strong> ${sanitizedTermLabel}</div>
           </div>
         </div>
 
@@ -271,14 +290,18 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
             </tr>
           </thead>
           <tbody>
-            ${subjects.map((sub: ReportSubject, index: number) => `
+            ${subjects.map((sub, index) => {
+              const sanitizedSubjectName = sanitizeString(sub.subjectName);
+              const sanitizedGrade = sanitizeString(sub.grade || '-');
+              const sanitizedRemark = sanitizeString(sub.remark || '-');
+              return `
               <tr style="background: ${index % 2 === 0 ? '#ffffff' : '#f9fafb'};">
-                <td style="border: 1px solid #ddd; padding: 8px;">${sub.subjectName}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${sanitizedSubjectName}</td>
                 <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${sub.totalScore?.toFixed(1) || '0'}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">${sub.grade || '-'}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; font-size: 10px; font-style: italic;">${sub.remark || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">${sanitizedGrade}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; font-size: 10px; font-style: italic;">${sanitizedRemark}</td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>
 
@@ -304,11 +327,11 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
         <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px;">
           <div style="border: 1px solid #ddd; padding: 12px; border-radius: 5px;">
             <strong style="font-size: 11px; display: block; margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 3px;">CLASS TEACHER'S REMARK:</strong>
-            <p style="font-style: italic; font-size: 11px; margin: 0;">${reportData.comments?.teacher || 'No comment provided.'}</p>
+            <p style="font-style: italic; font-size: 11px; margin: 0;">${sanitizeString(reportData.comments?.teacher || 'No comment provided.')}</p>
           </div>
           <div style="border: 1px solid #ddd; padding: 12px; border-radius: 5px;">
             <strong style="font-size: 11px; display: block; margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 3px;">PRINCIPAL'S REMARK:</strong>
-            <p style="font-style: italic; font-size: 11px; margin: 0;">${reportData.comments?.principal || 'No comment provided.'}</p>
+            <p style="font-style: italic; font-size: 11px; margin: 0;">${sanitizeString(reportData.comments?.principal || 'No comment provided.')}</p>
           </div>
         </div>
 
@@ -344,9 +367,10 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
           
           if (pdfBlob) {
             // Create filename: StudentName_AdmNumber_Term_Report.pdf
-            const safeName = student.name.replace(/[^a-zA-Z0-9]/g, '_');
-            const admNumber = student.admission_number || 'NO_ADM';
-            const filename = `${safeName}_${admNumber}_${termName.replace(/[^a-zA-Z0-9]/g, '_')}_Report.pdf`;
+            const safeName = sanitizeString(student.name);
+            const admNumber = sanitizeString(student.admission_number || 'NO_ADM');
+            const safeTermName = sanitizeString(termName);
+            const filename = `${safeName}_${admNumber}_${safeTermName}_Report.pdf`;
             
             zip.file(filename, pdfBlob);
             successCount++;
@@ -371,7 +395,9 @@ const BulkReportCardGenerator: React.FC<BulkReportCardGeneratorProps> = ({
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${className.replace(/[^a-zA-Z0-9]/g, '_')}_${termName.replace(/[^a-zA-Z0-9]/g, '_')}_ReportCards.zip`;
+      const safeClassName = sanitizeString(className);
+      const safeTermName = sanitizeString(termName);
+      link.download = `${safeClassName}_${safeTermName}_ReportCards.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
