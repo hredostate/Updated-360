@@ -237,7 +237,7 @@ const ResultManager: React.FC<ResultManagerProps> = ({
                 return {
                     studentName: student?.name,
                     score: s.total_score,
-                    grade: s.grade
+                    grade: s.grade_label // Changed from 'grade' to 'grade_label'
                 };
             });
 
