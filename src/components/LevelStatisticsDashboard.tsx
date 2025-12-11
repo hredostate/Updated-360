@@ -296,7 +296,7 @@ const LevelStatisticsDashboard: React.FC<LevelStatisticsDashboardProps> = ({
         if (gradeLevels.length > 0 && !selectedLevel) {
             setSelectedLevel(gradeLevels[0]);
         }
-    }, [gradeLevels, selectedLevel]);
+    }, [gradeLevels]);
 
     if (gradeLevels.length === 0) {
         return (

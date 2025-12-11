@@ -71,17 +71,34 @@ const StudentRankingTable: React.FC<StudentRankingTableProps> = ({
     };
 
     const handleExport = () => {
-        const headers = showArmColumn 
-            ? ['Rank', 'Student Name', 'Admission No', 'Class', 'Arm', 'Average %', 'Total Score', 'Grade']
-            : ['Rank', 'Student Name', 'Admission No', 'Class', 'Average %', 'Total Score', 'Grade'];
+        const exportData = sortedRankings.map(r => {
+            const baseData = {
+                Rank: r.rank,
+                'Student Name': r.student_name,
+                'Admission No': r.admission_number || 'N/A',
+                Class: r.class_name,
+                'Average %': r.average_score.toFixed(2),
+                'Total Score': r.total_score.toFixed(2),
+                Grade: r.grade_label
+            };
+            
+            if (showArmColumn) {
+                return {
+                    Rank: baseData.Rank,
+                    'Student Name': baseData['Student Name'],
+                    'Admission No': baseData['Admission No'],
+                    Class: baseData.Class,
+                    Arm: r.arm_name,
+                    'Average %': baseData['Average %'],
+                    'Total Score': baseData['Total Score'],
+                    Grade: baseData.Grade
+                };
+            }
+            
+            return baseData;
+        });
         
-        const rows = sortedRankings.map(r => 
-            showArmColumn
-                ? [r.rank, r.student_name, r.admission_number || 'N/A', r.class_name, r.arm_name, r.average_score.toFixed(2), r.total_score.toFixed(2), r.grade_label]
-                : [r.rank, r.student_name, r.admission_number || 'N/A', r.class_name, r.average_score.toFixed(2), r.total_score.toFixed(2), r.grade_label]
-        );
-        
-        exportToCsv(headers, rows, `student-rankings-${Date.now()}.csv`);
+        exportToCsv(exportData, `student-rankings-${Date.now()}.csv`);
     };
 
     const getRankBadgeColor = (rank: number) => {
