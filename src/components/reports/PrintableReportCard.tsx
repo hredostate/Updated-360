@@ -1,4 +1,5 @@
 import React from 'react';
+import { getAttendanceStatus } from '../../utils/attendanceHelpers';
 
 interface Subject {
   name: string;
@@ -62,13 +63,6 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
     if (grade.startsWith('C')) return 'text-yellow-600';
     if (grade.startsWith('D')) return 'text-orange-600';
     return 'text-red-600';
-  };
-
-  const getAttendanceStatus = (rate: number): { color: string; label: string; emoji: string; bgColor: string } => {
-    if (rate >= 95) return { color: 'text-green-700', label: 'Excellent', emoji: '✅', bgColor: 'bg-green-100 border-green-300' };
-    if (rate >= 90) return { color: 'text-green-600', label: 'Good', emoji: '👍', bgColor: 'bg-green-50 border-green-200' };
-    if (rate >= 80) return { color: 'text-yellow-600', label: 'Needs Improvement', emoji: '⚠️', bgColor: 'bg-yellow-50 border-yellow-200' };
-    return { color: 'text-red-600', label: 'Poor/At Risk', emoji: '🔴', bgColor: 'bg-red-50 border-red-200' };
   };
 
   const attendancePercentage = attendance.rate.toFixed(1);

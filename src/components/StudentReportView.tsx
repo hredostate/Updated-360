@@ -5,6 +5,7 @@ import type { StudentTermReportDetails, GradingScheme, StudentInvoice } from '..
 import Spinner from './common/Spinner';
 import { LockClosedIcon, ShieldIcon } from './common/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { getAttendanceStatus, type AttendanceData } from '../utils/attendanceHelpers';
 
 interface StudentReportViewProps {
   studentId: number;
@@ -50,16 +51,8 @@ const PerformanceChart: React.FC<{ data: { name: string, score: number }[], them
     );
 }
 
-// Helper function to get attendance status color and label
-const getAttendanceStatus = (rate: number): { color: string; label: string; emoji: string; bgColor: string } => {
-    if (rate >= 95) return { color: 'text-green-700', label: 'Excellent', emoji: '✅', bgColor: 'bg-green-100 border-green-300' };
-    if (rate >= 90) return { color: 'text-green-600', label: 'Good', emoji: '👍', bgColor: 'bg-green-50 border-green-200' };
-    if (rate >= 80) return { color: 'text-yellow-600', label: 'Needs Improvement', emoji: '⚠️', bgColor: 'bg-yellow-50 border-yellow-200' };
-    return { color: 'text-red-600', label: 'Poor/At Risk', emoji: '🔴', bgColor: 'bg-red-50 border-red-200' };
-};
-
 // Attendance Summary Component
-const AttendanceSummary: React.FC<{ attendance: any }> = ({ attendance }) => {
+const AttendanceSummary: React.FC<{ attendance: AttendanceData }> = ({ attendance }) => {
     const { present, absent, late, excused, unexcused, total, rate } = attendance;
     const status = getAttendanceStatus(rate);
     
