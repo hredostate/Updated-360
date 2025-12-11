@@ -3,33 +3,29 @@ import { supabase } from '../services/supabaseClient';
 import type { AISettings } from '../types';
 import Spinner from './common/Spinner';
 import { initializeAIClient, getAIClient } from '../services/aiClient';
-import OllamaSettings from './OllamaSettings';
 
-interface OpenRouterSettingsProps {
+interface GroqSettingsProps {
     schoolId: number;
 }
 
-// Available AI models
+// Available Groq models
 const AVAILABLE_MODELS = [
-    { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o (Recommended)', description: 'Latest GPT-4 model, best for complex tasks' },
-    { value: 'openai/gpt-4o-mini', label: 'OpenAI GPT-4o Mini', description: 'Faster and cheaper alternative' },
-    { value: 'anthropic/claude-3.5-sonnet', label: 'Anthropic Claude 3.5 Sonnet', description: 'Advanced reasoning and analysis' },
-    { value: 'google/gemini-2.0-flash-exp', label: 'Google Gemini 2.0 Flash', description: 'Fast and efficient' },
-    { value: 'meta-llama/llama-3.1-70b-instruct', label: 'Meta Llama 3.1 70B', description: 'Open source model' },
+    { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant (Recommended)', description: 'Super fast, great for most tasks' },
+    { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile', description: 'More powerful, better reasoning' },
+    { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B', description: 'Good balance of speed and quality' },
+    { value: 'gemma2-9b-it', label: 'Gemma 2 9B', description: 'Google model, good for instructions' },
 ];
 
-const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => {
+const GroqSettings: React.FC<GroqSettingsProps> = ({ schoolId }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState(false);
     const [showApiKey, setShowApiKey] = useState(false);
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-    const [selectedProvider, setSelectedProvider] = useState<'openrouter' | 'ollama'>('openrouter');
     
     const [formData, setFormData] = useState<AISettings>({
-        ai_provider: 'openrouter',
-        openrouter_api_key: '',
-        default_model: 'openai/gpt-4o',
+        groq_api_key: '',
+        default_model: 'llama-3.1-8b-instant',
         is_configured: false
     });
 
@@ -54,42 +50,35 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
             
             if (data?.ai_settings) {
                 setFormData({
-                    ai_provider: data.ai_settings.ai_provider || 'openrouter',
-                    openrouter_api_key: '', // Don't show the actual key for security
-                    default_model: data.ai_settings.default_model || 'openai/gpt-4o',
-                    is_configured: data.ai_settings.is_configured || false,
-                    ollama_url: data.ai_settings.ollama_url,
-                    ollama_model: data.ai_settings.ollama_model
+                    groq_api_key: '', // Don't show the actual key for security
+                    openrouter_api_key: '', // For backward compatibility
+                    default_model: data.ai_settings.default_model || 'llama-3.1-8b-instant',
+                    is_configured: data.ai_settings.is_configured || false
                 });
-                setSelectedProvider(data.ai_settings.ai_provider || 'openrouter');
             } else {
                 // No AI settings found, use defaults
                 setFormData({
-                    ai_provider: 'openrouter',
-                    openrouter_api_key: '',
-                    default_model: 'openai/gpt-4o',
+                    groq_api_key: '',
+                    default_model: 'llama-3.1-8b-instant',
                     is_configured: false
                 });
-                setSelectedProvider('openrouter');
             }
         } catch (error) {
             console.error('Error fetching AI settings:', error);
             // Set defaults even on error
             setFormData({
-                ai_provider: 'openrouter',
-                openrouter_api_key: '',
-                default_model: 'openai/gpt-4o',
+                groq_api_key: '',
+                default_model: 'llama-3.1-8b-instant',
                 is_configured: false
             });
-            setSelectedProvider('openrouter');
         } finally {
             setLoading(false);
         }
     };
 
     const handleSave = async () => {
-        if (!formData.openrouter_api_key && !formData.is_configured) {
-            alert('Please enter your OpenRouter API key');
+        if (!formData.groq_api_key && !formData.is_configured) {
+            alert('Please enter your Groq API key');
             return;
         }
 
@@ -99,14 +88,13 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
         try {
             // Prepare the AI settings object
             const aiSettings: AISettings = {
-                ai_provider: selectedProvider,
                 default_model: formData.default_model,
                 is_configured: true
             };
 
             // Only include the API key if it's provided (for new entries or updates)
-            if (formData.openrouter_api_key) {
-                aiSettings.openrouter_api_key = formData.openrouter_api_key;
+            if (formData.groq_api_key) {
+                aiSettings.groq_api_key = formData.groq_api_key;
             }
 
             const { error } = await supabase
@@ -117,12 +105,12 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
             if (error) throw error;
 
             // Initialize the AI client with the new settings
-            if (formData.openrouter_api_key) {
-                initializeAIClient(formData.openrouter_api_key, formData.default_model);
+            if (formData.groq_api_key) {
+                initializeAIClient(formData.groq_api_key, formData.default_model);
             }
 
             alert('AI Configuration saved successfully!');
-            setFormData(prev => ({ ...prev, is_configured: true, openrouter_api_key: '' }));
+            setFormData(prev => ({ ...prev, is_configured: true, groq_api_key: '' }));
             await fetchSettings();
         } catch (error: any) {
             console.error('Error saving AI settings:', error);
@@ -133,7 +121,7 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
     };
 
     const handleTestConnection = async () => {
-        if (!formData.openrouter_api_key && !formData.is_configured) {
+        if (!formData.groq_api_key && !formData.is_configured) {
             setTestResult({ success: false, message: 'Please enter an API key first' });
             return;
         }
@@ -143,7 +131,7 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
 
         try {
             // Initialize client with the current API key
-            let apiKey = formData.openrouter_api_key;
+            let apiKey = formData.groq_api_key;
             
             // If no API key in form but is_configured, fetch from database
             if (!apiKey && formData.is_configured) {
@@ -154,7 +142,7 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
                     .single();
                 
                 if (error) throw error;
-                apiKey = data?.ai_settings?.openrouter_api_key || '';
+                apiKey = data?.ai_settings?.groq_api_key || data?.ai_settings?.openrouter_api_key || '';
             }
 
             if (!apiKey) {
@@ -172,7 +160,7 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
 
             // Test the connection with a simple request
             const response = await client.chat.completions.create({
-                model: formData.default_model || 'openai/gpt-4o',
+                model: formData.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: 'Say "Hello" if you can read this.' }],
                 max_tokens: 10
             });
@@ -207,89 +195,51 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
                     AI Configuration
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Configure AI provider for AI-powered features throughout the application.
+                    Configure Groq AI for AI-powered features throughout the application.
                 </p>
             </div>
 
-            {/* Provider Selection */}
-            <div className="space-y-3">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    AI Provider
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => setSelectedProvider('openrouter')}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                            selectedProvider === 'openrouter'
-                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                : 'border-slate-300 dark:border-slate-600 hover:border-blue-300'
-                        }`}
-                    >
-                        <div className="text-2xl mb-2">☁️</div>
-                        <div className="font-semibold text-slate-900 dark:text-white">OpenRouter</div>
-                        <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Cloud-based AI</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">Requires API key</div>
-                    </button>
-                    <button
-                        onClick={() => setSelectedProvider('ollama')}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                            selectedProvider === 'ollama'
-                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                : 'border-slate-300 dark:border-slate-600 hover:border-green-300'
-                        }`}
-                    >
-                        <div className="text-2xl mb-2">🖥️</div>
-                        <div className="font-semibold text-slate-900 dark:text-white">Ollama</div>
-                        <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Local AI (Free)</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">No API key needed</div>
-                    </button>
+            {/* Configuration Status */}
+            <div className={`p-4 rounded-lg border ${
+                formData.is_configured 
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+            }`}>
+                <div className="flex items-center gap-2">
+                    <span className="text-2xl">{formData.is_configured ? '✓' : '⚠️'}</span>
+                    <div>
+                        <p className={`font-semibold ${
+                            formData.is_configured 
+                                ? 'text-green-800 dark:text-green-200' 
+                                : 'text-amber-800 dark:text-amber-200'
+                        }`}>
+                            {formData.is_configured ? 'AI is Configured' : 'AI Not Configured'}
+                        </p>
+                        <p className={`text-sm ${
+                            formData.is_configured 
+                                ? 'text-green-600 dark:text-green-300' 
+                                : 'text-amber-600 dark:text-amber-300'
+                        }`}>
+                            {formData.is_configured 
+                                ? 'AI features are active and ready to use' 
+                                : 'Please configure your Groq API key to enable AI features'}
+                        </p>
+                    </div>
                 </div>
             </div>
-
-            {/* Conditional rendering based on provider */}
-            {selectedProvider === 'openrouter' ? (
-                <>
-                    {/* Configuration Status */}
-                    <div className={`p-4 rounded-lg border ${
-                        formData.is_configured 
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                    }`}>
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl">{formData.is_configured ? '✓' : '⚠️'}</span>
-                            <div>
-                                <p className={`font-semibold ${
-                                    formData.is_configured 
-                                        ? 'text-green-800 dark:text-green-200' 
-                                        : 'text-amber-800 dark:text-amber-200'
-                                }`}>
-                                    {formData.is_configured ? 'AI is Configured' : 'AI Not Configured'}
-                                </p>
-                                <p className={`text-sm ${
-                                    formData.is_configured 
-                                        ? 'text-green-600 dark:text-green-300' 
-                                        : 'text-amber-600 dark:text-amber-300'
-                                }`}>
-                                    {formData.is_configured 
-                                        ? 'AI features are active and ready to use' 
-                                        : 'Please configure your OpenRouter API key to enable AI features'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
 
             {/* API Key Input */}
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-                    OpenRouter API Key
+                    Groq API Key
                 </label>
                 <div className="flex gap-2">
                     <div className="flex-1 relative">
                         <input
                             type={showApiKey ? 'text' : 'password'}
-                            value={formData.openrouter_api_key}
-                            onChange={(e) => setFormData({ ...formData, openrouter_api_key: e.target.value })}
-                            placeholder={formData.is_configured ? '••••••••••••••••' : 'Enter your OpenRouter API key'}
+                            value={formData.groq_api_key}
+                            onChange={(e) => setFormData({ ...formData, groq_api_key: e.target.value })}
+                            placeholder={formData.is_configured ? '••••••••••••••••' : 'Enter your Groq API key'}
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -304,7 +254,7 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formData.is_configured 
                         ? 'Leave blank to keep the existing API key' 
-                        : 'Your API key will be stored securely'}
+                        : 'Get your free API key from console.groq.com'}
                 </p>
             </div>
 
@@ -361,19 +311,18 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
             {/* Help Section */}
             <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-3">
-                    📚 How to Get Your OpenRouter API Key
+                    📚 How to Get Your Groq API Key (Free!)
                 </h4>
                 <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800 dark:text-blue-200">
-                    <li>Visit <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">OpenRouter.ai</a></li>
+                    <li>Visit <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">console.groq.com</a></li>
                     <li>Sign up or log in to your account</li>
-                    <li>Navigate to the API Keys section in your dashboard</li>
+                    <li>Navigate to the API Keys section</li>
                     <li>Create a new API key</li>
                     <li>Copy the key and paste it above</li>
-                    <li>Add credits to your OpenRouter account to use the models</li>
                 </ol>
                 <p className="mt-4 text-xs text-blue-700 dark:text-blue-300">
-                    💡 <strong>Tip:</strong> OpenRouter provides access to multiple AI models from different providers with a single API key. 
-                    You only pay for what you use, with transparent pricing.
+                    💡 <strong>Free Tier:</strong> Groq offers 500,000 tokens per day for free! That's plenty for most schools. 
+                    Lightning fast inference with no cost.
                 </p>
             </div>
 
@@ -393,12 +342,8 @@ const OpenRouterSettings: React.FC<OpenRouterSettingsProps> = ({ schoolId }) => 
                     <li>• Social Media Content</li>
                 </ul>
             </div>
-                </>
-            ) : (
-                <OllamaSettings schoolId={schoolId} />
-            )}
         </div>
     );
 };
 
-export default OpenRouterSettings;
+export default GroqSettings;

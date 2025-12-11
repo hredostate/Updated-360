@@ -285,12 +285,10 @@ export interface SchoolHealthReport {
 }
 
 export interface AISettings {
-    ai_provider?: 'openrouter' | 'ollama';
-    openrouter_api_key?: string;
+    groq_api_key?: string;
+    openrouter_api_key?: string; // Deprecated, kept for backward compatibility
     default_model?: string;
     is_configured?: boolean;
-    ollama_url?: string;
-    ollama_model?: string;
 }
 
 export interface SchoolSettings {

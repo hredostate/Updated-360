@@ -64,7 +64,7 @@ Return a JSON object with:
         }
         
         const response = await aiClient.chat.completions.create({
-            model: 'openai/gpt-4o',
+            model: 'llama-3.1-8b-instant',
             messages: [{ role: 'user', content: userPrompt }],
             response_format: { type: 'json_object' }
         });

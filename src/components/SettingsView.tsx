@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import type { SchoolSettings, SchoolConfig } from '../types';
 import SchoolBranding from './SchoolBranding';
 import BrandingSettings from './BrandingSettings';
 import PaymentGatewaySettings from './PaymentGatewaySettings';
 import TermiiSettings from './TermiiSettings';
-import OpenRouterSettings from './OpenRouterSettings';
+import GroqSettings from './GroqSettings';
 import Spinner from './common/Spinner';
 import DATABASE_SCHEMA, { DICTIONARY_FIX_SQL, RESEED_DATA_SQL, ATTENDANCE_FIX_SQL } from '../databaseSchema';
 
@@ -83,7 +82,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ settings, schoolConfig, onS
             case 'Messaging Gateway':
                 return settings ? <TermiiSettings schoolId={settings.id} /> : null;
             case 'AI Configuration':
-                return settings ? <OpenRouterSettings schoolId={settings.id} /> : null;
+                return settings ? <GroqSettings schoolId={settings.id} /> : null;
             case 'Data':
                 return (
                     <div className="space-y-6">

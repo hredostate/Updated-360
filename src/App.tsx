@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, useMemo, Component } from 'react';
 import type { Session, User } from '@supabase/auth-js';
 import { supabaseError } from './services/supabaseClient';
-import { initializeAIClient, getAIClient, getAIClientError, setAIProvider, initializeOllamaAIClient } from './services/aiClient';
+import { initializeAIClient, getAIClient, getAIClientError } from './services/aiClient';
 import type { OpenAI } from 'openai';
 import { Team, TeamFeedback, TeamPulse, Task, TaskPriority, TaskStatus, ReportType, CoverageStatus, RoleTitle, Student, UserProfile, ReportRecord, ReportComment, Announcement, Notification, ToastMessage, RoleDetails, PositiveBehaviorRecord, StudentAward, StaffAward, AIProfileInsight, AtRiskStudent, Alert, StudentInterventionPlan, SIPLog, SchoolHealthReport, SchoolSettings, PolicyInquiry, LivingPolicySnippet, AtRiskTeacher, InventoryItem, CalendarEvent, LessonPlan, CurriculumReport, LessonPlanAnalysis, DailyBriefing, StudentProfile, TeachingAssignment, BaseDataObject, Survey, SurveyWithQuestions, TeacherRatingWeekly, SuggestedTask, SchoolImprovementPlan, Curriculum, CurriculumWeek, CoverageDeviation, ClassGroup, AttendanceSchedule, AttendanceRecord, UPSSGPTResponse, SchoolConfig, Term, AcademicClass, AcademicTeachingAssignment, GradingScheme, GradingSchemeRule, AcademicClassStudent, ScoreEntry, StudentTermReport, AuditLog, Assessment, AssessmentScore, CoverageVote, RewardStoreItem, PayrollRun, PayrollItem, PayrollAdjustment, Campus, TeacherCheckin, CheckinAnomaly, LeaveType, LeaveRequest, LeaveRequestStatus, TeacherShift, FutureRiskPrediction, AssessmentStructure, SocialMediaAnalytics, SocialAccount, CreatedCredential, NavigationContext, TeacherMood, Order, OrderStatus, StudentTermReportSubject, UserRoleAssignment, StudentFormData, PayrollUpdateData, CommunicationLogData, ZeroScoreEntry } from './types';
 
@@ -1210,19 +1210,14 @@ const App: React.FC = () => {
     // --- Initialize AI Client ---
     useEffect(() => {
         if (schoolSettings?.ai_settings) {
-            const { ai_provider, openrouter_api_key, default_model, ollama_url, ollama_model } = schoolSettings.ai_settings;
+            const { groq_api_key, openrouter_api_key, default_model } = schoolSettings.ai_settings;
             
-            // Set the provider (default to openrouter if not specified)
-            const provider = ai_provider || 'openrouter';
-            setAIProvider(provider);
+            // Use groq_api_key if available, fallback to openrouter_api_key for backward compatibility
+            const apiKey = groq_api_key || openrouter_api_key;
             
-            if (provider === 'ollama') {
-                console.log('[AI] Initializing AI client with Ollama');
-                initializeOllamaAIClient(ollama_url, ollama_model);
-                console.log('[AI] Ollama client initialized successfully');
-            } else if (openrouter_api_key) {
-                console.log('[AI] Initializing AI client with OpenRouter');
-                initializeAIClient(openrouter_api_key, default_model || 'openai/gpt-4o');
+            if (apiKey) {
+                console.log('[AI] Initializing AI client with Groq');
+                initializeAIClient(apiKey, default_model || 'llama-3.1-8b-instant');
                 const error = getAIClientError();
                 if (error) {
                     console.error('[AI] Failed to initialize AI client:', error);
@@ -1467,7 +1462,7 @@ const App: React.FC = () => {
             if (studentsWithReports.length === 0) { setAtRiskStudents([]); return; }
             const prompt = `Analyze the following reports to identify at-risk students. Return a JSON array of objects with "studentId" (number), "riskScore" (1-100), and "reasons" (array of short strings). Only include students with a risk score > 60. Students and their associated negative report texts: ${studentsWithReports.map(s => `Student ID ${s.id} (${s.name}):\n- ${studentReportMap[s.id].join('\n- ')}`).join('\n\n')}`;
             const response = await aiClient.chat.completions.create({ 
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -1593,7 +1588,7 @@ const App: React.FC = () => {
             }
             const prompt = `Analyze these urgent school reports and suggest concrete, actionable tasks. For each report, generate one task. Return a JSON array of objects, each with "reportId" (number), "title" (string, max 50 chars), "description" (string, max 150 chars), "priority" (string: 'High' or 'Critical'), and "suggestedRole" (string, one of: 'Admin', 'Principal', 'Counselor', 'Team Lead', 'Maintenance'). Reports:\n${urgentReports.map(r => `ID ${r.id}: "${r.report_text}" - Summary: ${r.analysis?.summary}`).join('\n')}`;
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -1700,7 +1695,7 @@ const App: React.FC = () => {
              const context = `Total Reports: ${reportCount}, Task Completion Rate: ${taskCompletionRate.toFixed(1)}%, At-Risk Students: ${atRiskCount}, Positive Behaviors: ${positiveBehaviorCount}, Team Pulse: ${averageTeamPulse.toFixed(1)}`;
              const prompt = `You are an AI school administrator. Generate a "School Health Report" JSON with "overall_score" (0-100), "summary" (string), and "metrics" (array of {metric, score, summary}). Data: ${context}`;
              const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
              });
@@ -1807,7 +1802,7 @@ const App: React.FC = () => {
             const prompt = `Analyze the following reports for signs of teacher burnout, stress, or performance issues. Return a JSON array of objects with "teacherName" (string), "riskScore" (1-100), and "reasons" (array of strings). Only include high-risk cases. Reports: ${reportContext}`;
             
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -1864,7 +1859,7 @@ const App: React.FC = () => {
             const prompt = `Analyze these school incident reports. Identify 3 areas where school policy might be unclear, missing, or frequently violated. Return a JSON array of objects with "category", "question", and "context". Incidents:\n${incidents}`;
             
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -1898,7 +1893,7 @@ const App: React.FC = () => {
             Plans: ${JSON.stringify(lessonPlans.map(p => ({ title: p.title, status: p.coverage_status, teacher: p.author?.name })))}`;
             
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -1969,7 +1964,7 @@ const App: React.FC = () => {
             `;
             
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -2088,7 +2083,7 @@ const App: React.FC = () => {
                 }`;
                 
                 const response = await aiClient.chat.completions.create({
-                    model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                    model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                     messages: [{ role: 'user', content: prompt }],
                     response_format: { type: 'json_object' }
                 });
@@ -2675,7 +2670,7 @@ const App: React.FC = () => {
             // AI Logic: Generate awards based on positive behavior records
             const prompt = `Analyze positive behavior records: ${JSON.stringify(positiveRecords.slice(0, AI_AWARDS_ANALYSIS_RECORD_LIMIT))}. Generate ${AI_AWARDS_GENERATION_COUNT} awards. JSON: [{student_id, award_type, reason}]`;
             const res = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -2728,7 +2723,7 @@ const App: React.FC = () => {
 
             const prompt = `Analyze this student's data and provide insights: ${JSON.stringify(studentData)}. Return JSON with fields: strengths, areas_for_improvement, recommendations.`;
             const res = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -3767,7 +3762,7 @@ const App: React.FC = () => {
                 const prompt = `Generate a detailed lesson plan for "${planData.title}" (Grade: ${planData.grade_level}). Include objectives, materials, activities, and assessment methods. Format as JSON matching the LessonPlan structure.`;
                 try {
                     const response = await aiClient.chat.completions.create({
-                        model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                        model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                         messages: [{ role: 'user', content: prompt }],
                         response_format: { type: 'json_object' }
                     });
@@ -4840,7 +4835,7 @@ Generate a JSON object with:
    - "key_themes": Array of 3-5 key themes or patterns observed in the data`;
 
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
@@ -4952,7 +4947,7 @@ Generate a JSON array of coverage deviation reports. For each teacher-assignment
 Focus on assignments with low completion rates or coverage issues. Return an empty array if all assignments are on track.`;
 
             const response = await aiClient.chat.completions.create({
-                model: schoolSettings?.ai_settings?.default_model || 'openai/gpt-4o',
+                model: schoolSettings?.ai_settings?.default_model || 'llama-3.1-8b-instant',
                 messages: [{ role: 'user', content: prompt }],
                 response_format: { type: 'json_object' }
             });
