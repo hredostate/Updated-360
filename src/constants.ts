@@ -59,6 +59,15 @@ export const ALL_PERMISSIONS: string[] = [
   'view-at-risk-students',
   'view-all-student-data',
   'view-sensitive-reports',
+  // Predictive Analytics permissions
+  'view-predictive-analytics',
+  'manage-risk-predictions',
+  'manage-learning-paths',
+  'manage-schedule-optimization',
+  'generate-automated-reports',
+  'view-campus-stats',
+  'score_entries.view_all', // View all teacher-entered scores
+  'score_entries.edit_all', // Edit any score entry (for Team Lead/Admin)
 ];
 
 export const VIEWS = {
@@ -123,7 +132,10 @@ export const VIEWS = {
   STORE_MANAGER: 'Store Manager',
   ORDER_MANAGER: 'Order Manager',
   SOCIAL_MEDIA_HUB: 'Social Media Hub',
-};
+  PREDICTIVE_ANALYTICS: 'Predictive Analytics',
+  SCORE_REVIEW: 'Score Review', // Team Lead/Admin view of all scores
+  CAMPUS_STATISTICS: 'Campus Statistics',
+} as const;
 
 export const STUDENT_STATUSES = [
     { value: 'Active', label: 'Active', color: 'bg-green-500/20 text-green-800 dark:text-green-300' },

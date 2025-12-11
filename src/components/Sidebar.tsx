@@ -65,7 +65,7 @@ const NAV_STRUCTURE: NavGroup[] = [
       { id: VIEWS.CURRICULUM_MANAGER, label: 'Curriculum Map', permission: 'view-curriculum-readonly|manage-curriculum' },
       { id: VIEWS.TEACHING_ASSIGNMENTS, label: 'Workload Analysis', permission: 'manage-curriculum' },
       { id: VIEWS.RESULT_MANAGER, label: 'Result Manager', permission: 'results.lock_and_publish' },
-      { id: VIEWS.SCORE_REVIEW, label: 'Score Review', permission: 'score_entries.view_all' },
+      { id: VIEWS.SCORE_REVIEW || 'Score Review', label: 'Score Review', permission: 'score_entries.view_all' },
       { id: VIEWS.COVERAGE_FEEDBACK, label: 'Coverage Feedback', permission: 'view-my-coverage-feedback|view-coverage-feedback' },
     ]
   },
@@ -115,13 +115,13 @@ const NAV_STRUCTURE: NavGroup[] = [
     items: [
       { id: VIEWS.SETTINGS, label: 'Global Settings', permission: 'manage-settings' },
       { id: VIEWS.AI_STRATEGIC_CENTER, label: 'AI Strategic Center', permission: 'view-school-health-overview' },
-      { id: VIEWS.PREDICTIVE_ANALYTICS, label: 'Predictive Analytics', permission: 'view-predictive-analytics' },
+      { id: VIEWS.PREDICTIVE_ANALYTICS || 'Predictive Analytics', label: 'Predictive Analytics', permission: 'view-predictive-analytics' },
       { id: VIEWS.SUPER_ADMIN_CONSOLE, label: 'Super Admin Console', permission: 'school.console.view' },
       { id: VIEWS.DATA_UPLOAD, label: 'Data Upload', permission: 'access-data-uploader' },
       { id: VIEWS.LIVING_POLICY, label: 'Living Policy', permission: 'manage-living-policy' },
       { id: VIEWS.ANALYTICS, label: 'Analytics Dashboard', permission: 'view-analytics' },
       { id: VIEWS.DATA_ANALYSIS, label: 'AI Data Analysis', permission: 'view-analytics' },
-      { id: VIEWS.CAMPUS_STATISTICS, label: 'Campus Statistics', permission: 'view-campus-stats' },
+      { id: VIEWS.CAMPUS_STATISTICS || 'Campus Statistics', label: 'Campus Statistics', permission: 'view-campus-stats' },
       { id: VIEWS.ROLE_DIRECTORY, label: 'Role Directory', permission: 'manage-roles' },
       { id: VIEWS.GUARDIAN_COMMAND, label: 'Guardian Command', permission: 'access-ai-assistant' },
     ]
@@ -287,8 +287,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userProfile,
                                   href="#"
                                   onClick={(e) => { 
                                     e.preventDefault(); 
-                                    console.log('[Sidebar] Navigating to:', item.id, 'from:', currentView);
-                                    onNavigate(item.id); 
+                                    if (!item.id) {
+                                      console.error('[Sidebar] Navigation failed: item.id is undefined for item:', item.label);
+                                      console.warn('[Sidebar] This indicates a missing VIEWS constant. Check src/constants.ts');
+                                      // Fallback to using the label as the view ID (labels match VIEWS values)
+                                      onNavigate(item.label);
+                                    } else {
+                                      console.log('[Sidebar] Navigating to:', item.id, 'from:', currentView);
+                                      onNavigate(item.id); 
+                                    }
                                     setSearchQuery(''); 
                                   }}
                                   className={`flex items-center py-2 pl-9 pr-3 w-full text-sm font-medium rounded-lg transition-all duration-200 relative z-10 ${
