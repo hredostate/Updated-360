@@ -68,7 +68,7 @@ const NAV_STRUCTURE: NavGroup[] = [
           { id: VIEWS.CURRICULUM_MANAGER, label: 'Curriculum Map', permission: 'view-curriculum-readonly|manage-curriculum' },
           { id: VIEWS.TEACHING_ASSIGNMENTS, label: 'Workload Analysis', permission: 'manage-curriculum' },
           { id: VIEWS.RESULT_MANAGER, label: 'Result Manager', permission: 'results.lock_and_publish' },
-          { id: VIEWS.SCORE_REVIEW || 'Score Review', label: 'Score Review', permission: 'score_entries.view_all' },
+          { id: VIEWS.SCORE_REVIEW, label: 'Score Review', permission: 'score_entries.view_all' },
           { id: VIEWS.CLASSES_ATTENDANCE, label: 'Class Groups', permission: 'take-class-attendance|manage-class-groups' },
         ]
       }
@@ -172,7 +172,7 @@ const NAV_STRUCTURE: NavGroup[] = [
         id: 'admin_more',
         label: 'More',
         items: [
-          { id: VIEWS.PREDICTIVE_ANALYTICS || 'Predictive Analytics', label: 'Predictive Analytics', permission: 'view-predictive-analytics' },
+          { id: VIEWS.PREDICTIVE_ANALYTICS, label: 'Predictive Analytics', permission: 'view-predictive-analytics' },
           { id: VIEWS.LIVING_POLICY, label: 'Living Policy', permission: 'manage-living-policy' },
           { id: VIEWS.DATA_UPLOAD, label: 'Data Upload', permission: 'access-data-uploader' },
           { id: VIEWS.SUPER_ADMIN_CONSOLE, label: 'Audit Logs', permission: 'school.console.view' },
@@ -401,7 +401,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userProfile,
                         <ChevronDownIcon className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''} opacity-50`} />
                       </button>
                       
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[2000px] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[100vh] opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
                         <ul className="space-y-0.5 pl-2 relative">
                           {/* Vertical line for hierarchy */}
                           <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 to-transparent dark:from-slate-800"></div>
@@ -456,7 +456,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userProfile,
                                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/20'
                                   }`}
                                 >
-                                  <span className="flex-1 text-left uppercase tracking-wide">▼ {subMenu.label}</span>
+                                  <span className="flex-1 text-left uppercase tracking-wide">
+                                    <span aria-hidden="true">▼ </span>{subMenu.label}
+                                  </span>
                                   <ChevronDownIcon className={`w-3 h-3 transition-transform duration-200 ${isSubMenuExpanded ? 'rotate-180' : ''} opacity-50`} />
                                 </button>
                                 
