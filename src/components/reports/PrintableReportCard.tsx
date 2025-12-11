@@ -29,7 +29,11 @@ interface ReportCardData {
   attendance: {
     present: number;
     absent: number;
+    late: number;
+    excused: number;
+    unexcused: number;
     total: number;
+    rate: number;
   };
   conduct?: {
     behavior: string;
@@ -60,7 +64,15 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
     return 'text-red-600';
   };
 
-  const attendancePercentage = ((attendance.present / attendance.total) * 100).toFixed(1);
+  const getAttendanceStatus = (rate: number): { color: string; label: string; emoji: string; bgColor: string } => {
+    if (rate >= 95) return { color: 'text-green-700', label: 'Excellent', emoji: '✅', bgColor: 'bg-green-100 border-green-300' };
+    if (rate >= 90) return { color: 'text-green-600', label: 'Good', emoji: '👍', bgColor: 'bg-green-50 border-green-200' };
+    if (rate >= 80) return { color: 'text-yellow-600', label: 'Needs Improvement', emoji: '⚠️', bgColor: 'bg-yellow-50 border-yellow-200' };
+    return { color: 'text-red-600', label: 'Poor/At Risk', emoji: '🔴', bgColor: 'bg-red-50 border-red-200' };
+  };
+
+  const attendancePercentage = attendance.rate.toFixed(1);
+  const attendanceStatus = getAttendanceStatus(attendance.rate);
 
   if (template === 'modern') {
     return (
@@ -142,6 +154,61 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Detailed Attendance Summary */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3 bg-blue-50 px-4 py-2 rounded">
+            Attendance Summary
+          </h3>
+          {attendance.total > 0 ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Days Present</p>
+                  <p className="text-2xl font-bold text-green-600">{attendance.present}</p>
+                </div>
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Days Absent</p>
+                  <p className="text-2xl font-bold text-red-600">{attendance.absent}</p>
+                </div>
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Days Late</p>
+                  <p className="text-2xl font-bold text-orange-600">{attendance.late}</p>
+                </div>
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Excused Absences</p>
+                  <p className="text-2xl font-bold text-blue-600">{attendance.excused}</p>
+                </div>
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Unexcused Absences</p>
+                  <p className="text-2xl font-bold text-red-700">{attendance.unexcused}</p>
+                </div>
+                <div className="bg-white border border-gray-300 rounded p-3 text-center">
+                  <p className="text-xs text-gray-600 uppercase">Total Days</p>
+                  <p className="text-2xl font-bold text-gray-700">{attendance.total}</p>
+                </div>
+              </div>
+              
+              <div className={`border-2 rounded p-4 ${attendanceStatus.bgColor}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Overall Attendance Rate</span>
+                  <span className={`text-lg font-bold ${attendanceStatus.color}`}>{attendancePercentage}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+                  <div 
+                    className={`h-4 rounded-full transition-all ${attendance.rate >= 90 ? 'bg-green-500' : attendance.rate >= 80 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${Math.min(attendance.rate, 100)}%` }}
+                  ></div>
+                </div>
+                <p className={`text-center text-sm font-semibold ${attendanceStatus.color}`}>
+                  {attendanceStatus.emoji} {attendanceStatus.label}
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-gray-500 py-4">No attendance records available for this term.</p>
+          )}
         </div>
 
         {/* Conduct */}
@@ -295,6 +362,59 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Detailed Attendance Summary */}
+      <div className="mb-6 border border-gray-800 p-4">
+        <h3 className="text-lg font-semibold mb-3 uppercase">Attendance Summary</h3>
+        {attendance.total > 0 ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Days Present</p>
+                <p className="text-2xl font-bold text-green-700">{attendance.present}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Days Absent</p>
+                <p className="text-2xl font-bold text-red-700">{attendance.absent}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Days Late</p>
+                <p className="text-2xl font-bold text-orange-700">{attendance.late}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Excused</p>
+                <p className="text-2xl font-bold text-blue-700">{attendance.excused}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Unexcused</p>
+                <p className="text-2xl font-bold text-red-800">{attendance.unexcused}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-400 p-3 text-center">
+                <p className="text-xs text-gray-600 uppercase font-semibold">Total Days</p>
+                <p className="text-2xl font-bold text-gray-800">{attendance.total}</p>
+              </div>
+            </div>
+            
+            <div className={`border-2 p-3 ${attendanceStatus.bgColor}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold">Overall Attendance Rate</span>
+                <span className={`text-lg font-bold ${attendanceStatus.color}`}>{attendancePercentage}%</span>
+              </div>
+              <div className="w-full bg-gray-300 h-4 mb-2 border border-gray-400">
+                <div 
+                  className={`h-full ${attendance.rate >= 90 ? 'bg-green-600' : attendance.rate >= 80 ? 'bg-yellow-500' : 'bg-red-600'}`}
+                  style={{ width: `${Math.min(attendance.rate, 100)}%` }}
+                ></div>
+              </div>
+              <p className={`text-center text-sm font-semibold ${attendanceStatus.color}`}>
+                {attendanceStatus.emoji} {attendanceStatus.label}
+              </p>
+            </div>
+          </>
+        ) : (
+          <p className="text-center text-gray-600 py-4">No attendance records available for this term.</p>
+        )}
       </div>
 
       {/* Conduct */}

@@ -1490,6 +1490,15 @@ DECLARE
     v_session_label TEXT;
     v_grade_level_position INTEGER;
     v_grade_level_size INTEGER;
+    v_term_start DATE;
+    v_term_end DATE;
+    v_present_count INTEGER;
+    v_absent_count INTEGER;
+    v_late_count INTEGER;
+    v_excused_count INTEGER;
+    v_unexcused_count INTEGER;
+    v_total_count INTEGER;
+    v_attendance_rate NUMERIC;
 BEGIN
     -- 1. Student Info
     SELECT jsonb_build_object('id', s.id, 'fullName', s.name, 'className', c.name)
@@ -1498,9 +1507,10 @@ BEGIN
     LEFT JOIN public.classes c ON s.class_id = c.id
     WHERE s.id = p_student_id;
 
-    -- 2. Term Info
-    SELECT jsonb_build_object('sessionLabel', session_label, 'termLabel', term_label)
-    INTO v_term
+    -- 2. Term Info with date range
+    SELECT jsonb_build_object('sessionLabel', session_label, 'termLabel', term_label),
+           start_date, end_date
+    INTO v_term, v_term_start, v_term_end
     FROM public.terms WHERE id = p_term_id;
 
     -- 3. Config
@@ -1561,8 +1571,45 @@ BEGIN
       AND ac.level = v_student_level
       AND ac.session_label = v_session_label;
 
-    -- 6. Attendance (Mock for now or aggregate)
-    v_attendance := jsonb_build_object('present', 0, 'possible', 0);
+    -- 6. Calculate real attendance from attendance_records
+    -- Join through class_group_members to connect students with attendance records
+    SELECT 
+        COALESCE(COUNT(*) FILTER (WHERE LOWER(ar.status) IN ('present', 'p')), 0),
+        COALESCE(COUNT(*) FILTER (WHERE LOWER(ar.status) IN ('absent', 'a')), 0),
+        COALESCE(COUNT(*) FILTER (WHERE LOWER(ar.status) IN ('late', 'tardy', 'l', 't')), 0),
+        COALESCE(COUNT(*) FILTER (WHERE LOWER(ar.status) IN ('excused', 'e')), 0),
+        COALESCE(COUNT(*), 0)
+    INTO v_present_count, v_absent_count, v_late_count, v_excused_count, v_total_count
+    FROM public.attendance_records ar
+    INNER JOIN public.class_group_members cgm ON ar.member_id = cgm.id
+    WHERE cgm.student_id = p_student_id
+      AND ar.session_date IS NOT NULL
+      AND (v_term_start IS NULL OR ar.session_date >= v_term_start)
+      AND (v_term_end IS NULL OR ar.session_date <= v_term_end);
+    
+    -- Calculate unexcused absences (absences that are not marked as excused)
+    v_unexcused_count := v_absent_count - v_excused_count;
+    IF v_unexcused_count < 0 THEN
+        v_unexcused_count := 0;
+    END IF;
+    
+    -- Calculate attendance rate
+    IF v_total_count > 0 THEN
+        v_attendance_rate := ROUND((v_present_count::NUMERIC / v_total_count::NUMERIC) * 100, 2);
+    ELSE
+        v_attendance_rate := 0;
+    END IF;
+    
+    -- Build attendance object with detailed metrics
+    v_attendance := jsonb_build_object(
+        'present', v_present_count,
+        'absent', v_absent_count,
+        'late', v_late_count,
+        'excused', v_excused_count,
+        'unexcused', v_unexcused_count,
+        'total', v_total_count,
+        'rate', v_attendance_rate
+    );
 
     RETURN jsonb_build_object(
         'student', v_student,

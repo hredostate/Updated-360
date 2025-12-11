@@ -787,7 +787,12 @@ export interface StudentTermReportDetails {
     };
     attendance: {
         present: number;
-        possible: number;
+        absent: number;
+        late: number;
+        excused: number;
+        unexcused: number;
+        total: number;
+        rate: number; // Percentage
     };
     comments: {
         teacher: string;
