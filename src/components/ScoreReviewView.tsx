@@ -152,7 +152,7 @@ const ScoreReviewView: React.FC<ScoreReviewViewProps> = ({
         setEditingScoreId(score.id);
         setEditingValues({
             component_scores: { ...score.component_scores },
-            teacher_comment: score.teacher_comment || ''
+            remark: score.remark || '' // Changed from teacher_comment to remark
         });
     };
 
@@ -175,7 +175,7 @@ const ScoreReviewView: React.FC<ScoreReviewViewProps> = ({
             const updates: Partial<ScoreEntry> = {
                 component_scores: componentScores,
                 total_score: totalScore,
-                teacher_comment: editingValues.teacher_comment,
+                remark: editingValues.remark, // Changed from teacher_comment to remark
                 last_modified_by_user_id: currentUserId
             };
 
@@ -424,9 +424,9 @@ const ScoreReviewView: React.FC<ScoreReviewViewProps> = ({
                                                     score.total_score || 0
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 text-sm">
+                                             <td className="px-4 py-3 text-sm">
                                                 <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded font-medium">
-                                                    {score.grade || 'N/A'}
+                                                    {score.grade_label || 'N/A'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-sm">

@@ -291,32 +291,78 @@ CREATE TABLE IF NOT EXISTS public.score_entries (
     academic_class_id INTEGER REFERENCES public.academic_classes(id) ON DELETE CASCADE,
     subject_name TEXT,
     student_id INTEGER REFERENCES public.students(id) ON DELETE CASCADE,
-    component_scores JSONB DEFAULT '{}',
-    total_score NUMERIC,
-    grade TEXT,
-    teacher_comment TEXT,
-    ca_score NUMERIC,
+    
+    -- Score data
     exam_score NUMERIC,
+    total_score NUMERIC,
+    grade_label TEXT, -- Changed from 'grade' to match actual production DB
+    gpa_value NUMERIC, -- Added to match actual production DB
+    remark TEXT, -- Changed from 'teacher_comment' to match actual production DB
+    
+    -- CA scores stored as JSONB
+    ca_scores_breakdown JSONB, -- Changed from 'ca_score' NUMERIC to match actual production DB
+    component_scores JSONB DEFAULT '{}',
+    
+    -- Audit fields
+    last_updated_by UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL, -- Added to match actual production DB
     entered_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
     last_modified_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
     UNIQUE(term_id, academic_class_id, subject_name, student_id)
 );
 
--- Add columns to existing score_entries table if they don't exist
+-- Add columns to existing score_entries table if they don't exist (for migration from old schema)
 DO $$ BEGIN
+    -- Add audit columns
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='entered_by_user_id') THEN
         ALTER TABLE public.score_entries ADD COLUMN entered_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL;
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='last_modified_by_user_id') THEN
         ALTER TABLE public.score_entries ADD COLUMN last_modified_by_user_id UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='last_updated_by') THEN
+        ALTER TABLE public.score_entries ADD COLUMN last_updated_by UUID REFERENCES public.user_profiles(id) ON DELETE SET NULL;
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='created_at') THEN
         ALTER TABLE public.score_entries ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='updated_at') THEN
         ALTER TABLE public.score_entries ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+    
+    -- Add new score columns to match production schema
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='grade_label') THEN
+        -- Migrate data from 'grade' to 'grade_label' if grade exists
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='grade') THEN
+            ALTER TABLE public.score_entries ADD COLUMN grade_label TEXT;
+            UPDATE public.score_entries SET grade_label = grade WHERE grade IS NOT NULL;
+        ELSE
+            ALTER TABLE public.score_entries ADD COLUMN grade_label TEXT;
+        END IF;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='remark') THEN
+        -- Migrate data from 'teacher_comment' to 'remark' if teacher_comment exists
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='teacher_comment') THEN
+            ALTER TABLE public.score_entries ADD COLUMN remark TEXT;
+            UPDATE public.score_entries SET remark = teacher_comment WHERE teacher_comment IS NOT NULL;
+        ELSE
+            ALTER TABLE public.score_entries ADD COLUMN remark TEXT;
+        END IF;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='ca_scores_breakdown') THEN
+        ALTER TABLE public.score_entries ADD COLUMN ca_scores_breakdown JSONB;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='gpa_value') THEN
+        ALTER TABLE public.score_entries ADD COLUMN gpa_value NUMERIC;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='score_entries' AND column_name='component_scores') THEN
+        ALTER TABLE public.score_entries ADD COLUMN component_scores JSONB DEFAULT '{}';
     END IF;
 END $$;
 CREATE TABLE IF NOT EXISTS public.student_term_reports (

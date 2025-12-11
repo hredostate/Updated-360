@@ -3903,7 +3903,7 @@ const App: React.FC = () => {
                                 teacher_user_id: staffProfile.id,
                                 component_name: componentName,
                                 total_score: score.total_score || 0,
-                                teacher_comment: score.teacher_comment,
+                                teacher_comment: score.remark, // Use 'remark' from ScoreEntry
                                 entry_date: new Date().toISOString()
                             });
                         }
@@ -3917,7 +3917,7 @@ const App: React.FC = () => {
                             teacher_user_id: staffProfile.id,
                             component_name: null,
                             total_score: 0,
-                            teacher_comment: score.teacher_comment,
+                            teacher_comment: score.remark, // Use 'remark' from ScoreEntry
                             entry_date: new Date().toISOString()
                         });
                     }

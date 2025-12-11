@@ -78,16 +78,21 @@ const TeacherScoreEntryView: React.FC<TeacherScoreEntryViewProps> = ({
         const initialComments: Record<number, string> = {};
 
         existingEntries.forEach(entry => {
-            // Handle both JSONB component_scores and legacy flat columns
+            // Handle both JSONB component_scores and ca_scores_breakdown
             let compScores = entry.component_scores || {};
-            if (Object.keys(compScores).length === 0) {
-                // Try mapping legacy columns if JSON is empty
-                if (entry.ca_score !== undefined && entry.ca_score !== null) compScores['CA'] = Number(entry.ca_score);
-                if (entry.exam_score !== undefined && entry.exam_score !== null) compScores['Exam'] = Number(entry.exam_score);
+            
+            // Also check ca_scores_breakdown (JSONB field in actual DB)
+            if (Object.keys(compScores).length === 0 && entry.ca_scores_breakdown) {
+                compScores = { ...entry.ca_scores_breakdown };
+            }
+            
+            // Fallback to legacy exam_score if present
+            if (entry.exam_score !== undefined && entry.exam_score !== null) {
+                compScores['Exam'] = Number(entry.exam_score);
             }
             
             initialScores[entry.student_id] = compScores;
-            if (entry.teacher_comment) initialComments[entry.student_id] = entry.teacher_comment;
+            if (entry.remark) initialComments[entry.student_id] = entry.remark; // Changed from teacher_comment to remark
         });
 
         setLocalScores(initialScores);
@@ -152,18 +157,23 @@ const TeacherScoreEntryView: React.FC<TeacherScoreEntryViewProps> = ({
                 student_id: student.id,
                 component_scores: sScores,
                 total_score: total,
-                grade: grade,
-                teacher_comment: localComments[student.id] || null,
+                grade_label: grade, // Changed from 'grade' to 'grade_label'
+                remark: localComments[student.id] || null, // Changed from 'teacher_comment' to 'remark'
             };
 
-            // Only include legacy columns if they have actual values
-            // This prevents schema cache issues when columns exist but aren't in cache
-            const caScore = sScores['CA'] !== undefined ? sScores['CA'] : sScores['CA1'];
-            const examScore = sScores['Exam'];
-            
-            if (caScore !== undefined && caScore !== null) {
-                entry.ca_score = caScore;
+            // Store CA scores in ca_scores_breakdown (JSONB field in actual DB)
+            const caScores: Record<string, number> = {};
+            Object.entries(sScores).forEach(([key, value]) => {
+                if (key.startsWith('CA')) {
+                    caScores[key] = value;
+                }
+            });
+            if (Object.keys(caScores).length > 0) {
+                entry.ca_scores_breakdown = caScores;
             }
+            
+            // Also include exam_score for compatibility
+            const examScore = sScores['Exam'];
             if (examScore !== undefined && examScore !== null) {
                 entry.exam_score = examScore;
             }
@@ -197,9 +207,9 @@ const TeacherScoreEntryView: React.FC<TeacherScoreEntryViewProps> = ({
             addToast("No students to download.", 'info');
             return;
         }
-        // Headers: student_id, student_name, [component_names], teacher_comment
+        // Headers: student_id, student_name, [component_names], remark
         const componentNames = components.map(c => c.name);
-        const headers = ['student_id', 'student_name', ...componentNames, 'teacher_comment'];
+        const headers = ['student_id', 'student_name', ...componentNames, 'remark'];
         
         const rows = enrolledStudents.map(s => {
             const sScores = localScores[s.id] || {};
@@ -243,7 +253,7 @@ const TeacherScoreEntryView: React.FC<TeacherScoreEntryViewProps> = ({
             });
             
             const studentIdIndex = headers.indexOf('student_id');
-            const commentIndex = headers.indexOf('teacher_comment');
+            const commentIndex = headers.indexOf('remark'); // Changed from 'teacher_comment' to 'remark'
 
             if (studentIdIndex === -1) throw new Error("Missing 'student_id' column in CSV.");
 

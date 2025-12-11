@@ -733,20 +733,26 @@ export interface ScoreEntry {
     subject_name: string;
     student_id: number;
     
-    component_scores: Record<string, number>; // e.g. { "CA1": 10, "Exam": 50 }
+    // Score data - matching actual database schema
+    exam_score?: number;
     total_score: number;
-    grade: string;
-    teacher_comment?: string | null;
+    grade_label: string; // Changed from 'grade' to match DB
+    gpa_value?: number; // Added to match DB
+    remark?: string | null; // Changed from 'teacher_comment' to match DB
+    
+    // CA scores stored as JSONB in database
+    // ca_scores_breakdown: Stores CA components (CA1, CA2, etc.) in production DB
+    // component_scores: Stores all assessment components including CA and Exam
+    // Both fields are used for backward compatibility and different use cases
+    ca_scores_breakdown?: Record<string, number> | null; // Changed from 'ca_score' to match DB - for CA components only
+    component_scores?: Record<string, number>; // e.g. { "CA1": 10, "CA2": 15, "Exam": 50 } - all components
     
     // Audit fields for tracking who entered/modified scores
+    last_updated_by?: string | null; // Added to match DB (UUID)
     entered_by_user_id?: string | null;
     last_modified_by_user_id?: string | null;
     created_at?: string;
     updated_at?: string;
-    
-    // Legacy columns for backward compatibility if needed
-    ca_score?: number;
-    exam_score?: number;
     
     // Populated via joins in UI
     entered_by?: UserProfile;
