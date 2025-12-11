@@ -31,6 +31,10 @@ interface ReportFormProps {
   };
 }
 
+// Constants for mention feature
+const MAX_MENTION_RESULTS = 5;
+const MENTION_REGEX = /@([a-zA-Z0-9\s\-'À-ÿ]*)$/;
+
 const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCancel, addToast, initialData }) => {
   const [reportText, setReportText] = useState('');
   const [reportType, setReportType] = useState<ReportType>(ReportType.Observation);
@@ -86,14 +90,29 @@ const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCa
   ], [users, students]);
 
   const filteredMentionables = useMemo(() => {
+    // If mentioning but no query yet, show first MAX_MENTION_RESULTS results
+    if (isMentioning && !mentionQuery) {
+        return mentionables.slice(0, MAX_MENTION_RESULTS);
+    }
     if (!mentionQuery) return [];
     const query = mentionQuery.toLowerCase();
-    return mentionables.filter(p => p.name.toLowerCase().includes(query)).slice(0, 5);
-  }, [mentionQuery, mentionables]);
+    return mentionables.filter(p => p.name.toLowerCase().includes(query)).slice(0, MAX_MENTION_RESULTS);
+  }, [mentionQuery, mentionables, isMentioning]);
 
   useEffect(() => {
       setMentionIndex(0);
   }, [filteredMentionables]);
+
+  // Development debugging - log data availability on mount
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log('[ReportForm] Mounted with:', {
+            studentsCount: students.length,
+            usersCount: users.length,
+            mentionablesCount: mentionables.length
+        });
+    }
+  }, [students.length, users.length, mentionables.length]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,8 +174,8 @@ const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCa
 
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = text.substring(0, cursorPos);
-    // Simple regex to find the word starting with @ right before cursor
-    const mentionMatch = textBeforeCursor.match(/@([a-zA-Z0-9\s]*)$/);
+    // Support letters, numbers, spaces, hyphens, apostrophes, and common accented chars
+    const mentionMatch = textBeforeCursor.match(MENTION_REGEX);
 
     if (mentionMatch) {
       setIsMentioning(true);
@@ -180,7 +199,7 @@ const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCa
         const textAfterCursor = reportText.substring(cursorPos);
         
         // Replace the mention query with the person's name
-        const textBeforeMention = textBeforeCursor.replace(/@([a-zA-Z0-9\s]*)$/, '');
+        const textBeforeMention = textBeforeCursor.replace(MENTION_REGEX, '');
         const newText = `${textBeforeMention}@${person.name.replace(/\s+/g, '')} ${textAfterCursor}`;
         
         setReportText(newText);
@@ -332,7 +351,7 @@ const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCa
                 disabled={isEnhancing || isSubmitting}
               />
                {isMentioning && filteredMentionables.length > 0 && (
-                <div className="absolute bottom-full left-0 mb-1 z-10 w-full max-w-xs bg-white dark:bg-slate-800 border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute bottom-full left-0 mb-1 z-10 w-full max-w-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {filteredMentionables.map((p, index) => (
                     <div 
                         key={p.id} 
@@ -343,6 +362,11 @@ const ReportForm: React.FC<ReportFormProps> = ({ students, users, onSubmit, onCa
                         <p className="text-xs text-slate-500">{p.details}</p>
                     </div>
                   ))}
+                </div>
+              )}
+              {isMentioning && mentionQuery && filteredMentionables.length === 0 && (
+                <div className="absolute bottom-full left-0 mb-1 z-10 w-full max-w-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg p-3 text-sm text-slate-500">
+                    No matching students or staff found for "@{mentionQuery}"
                 </div>
               )}
           </div>
