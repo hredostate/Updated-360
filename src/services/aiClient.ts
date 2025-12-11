@@ -70,20 +70,31 @@ export function initializeOllamaAIClient(url?: string, model?: string): void {
 }
 
 /**
- * Get the active AI client based on the current provider
- * Returns an OpenAI-compatible client object
+ * Common interface for AI clients (OpenAI and Ollama)
  */
-export function getAIClient(): OpenAI | any | null {
+interface AIClient {
+  chat: {
+    completions: {
+      create: (request: any) => Promise<any>;
+    };
+  };
+}
+
+/**
+ * Get the active AI client based on the current provider
+ * Returns an AI client that implements the OpenAI-compatible interface
+ */
+export function getAIClient(): AIClient | null {
   if (currentProvider === 'ollama') {
     const ollamaClient = getOllamaClient();
     const error = getOllamaError();
     if (error) {
       aiClientError = error;
     }
-    return ollamaClient;
+    return ollamaClient as AIClient;
   }
   
-  return openRouterClient;
+  return openRouterClient as AIClient | null;
 }
 
 /**

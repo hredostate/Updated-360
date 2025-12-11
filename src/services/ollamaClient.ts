@@ -2,6 +2,9 @@
  * Ollama Client Service
  * Provides local AI capabilities using Ollama
  * No API key required - just needs Ollama running locally
+ * 
+ * Note: Global state pattern mirrors the existing OpenRouter client implementation
+ * for consistency and compatibility with the existing codebase.
  */
 
 interface OllamaModel {
@@ -204,12 +207,16 @@ export async function createChatCompletion(
       },
     };
 
-    // If JSON response is requested, add it to the prompt
+    // If JSON response is requested, add a system message for better compliance
     if (request.response_format?.type === 'json_object') {
-      const lastMessage = ollamaRequest.messages[ollamaRequest.messages.length - 1];
-      if (lastMessage && lastMessage.role === 'user') {
-        lastMessage.content += '\n\nRespond with valid JSON only.';
-      }
+      // Prepend a system message for JSON formatting
+      ollamaRequest.messages = [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant. Always respond with valid JSON only, no additional text or formatting.',
+        },
+        ...ollamaRequest.messages,
+      ];
     }
 
     const response = await fetch(`${ollamaUrl}/api/chat`, {
