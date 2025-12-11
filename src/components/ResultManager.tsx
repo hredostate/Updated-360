@@ -1,18 +1,20 @@
 
 import React, { useState, useMemo } from 'react';
-import type { AcademicTeachingAssignment, AcademicClassStudent, ScoreEntry, UserProfile, Student, StudentTermReport, GradingScheme, SchoolConfig } from '../types';
+import type { AcademicTeachingAssignment, AcademicClassStudent, ScoreEntry, UserProfile, Student, StudentTermReport, GradingScheme, SchoolConfig, AcademicClass } from '../types';
 import Spinner from './common/Spinner';
 import { LockClosedIcon, CheckCircleIcon, WandIcon, GlobeIcon, UsersIcon, PaintBrushIcon, SearchIcon } from './common/icons';
 import { aiClient } from '../services/aiClient';
 import { textFromGemini } from '../utils/ai';
 import { supa as supabase } from '../offline/client';
+import LevelStatisticsDashboard from './LevelStatisticsDashboard';
 
-type ViewMode = 'by-class' | 'by-subject';
+type ViewMode = 'by-class' | 'by-subject' | 'statistics';
 
 interface ResultManagerProps {
     terms: any[];
     academicAssignments: AcademicTeachingAssignment[];
     academicClassStudents: AcademicClassStudent[];
+    academicClasses: AcademicClass[];
     scoreEntries: ScoreEntry[];
     users: UserProfile[];
     onLockScores: (assignmentId: number) => Promise<boolean>;
@@ -27,7 +29,7 @@ interface ResultManagerProps {
 }
 
 const ResultManager: React.FC<ResultManagerProps> = ({ 
-    terms, academicAssignments, academicClassStudents, scoreEntries, users, onLockScores, userPermissions, 
+    terms, academicAssignments, academicClassStudents, academicClasses, scoreEntries, users, onLockScores, userPermissions, 
     students, studentTermReports, studentTermReportSubjects, gradingSchemes, schoolConfig, onUpdateComments, addToast 
 }) => {
     const [selectedTermId, setSelectedTermId] = useState<number | ''>('');
@@ -364,6 +366,12 @@ const ResultManager: React.FC<ResultManagerProps> = ({
                             >
                                 By Subject
                             </button>
+                            <button
+                                onClick={() => setViewMode('statistics')}
+                                className={`px-3 py-1 text-sm font-medium rounded-md transition ${viewMode === 'statistics' ? 'bg-white dark:bg-slate-600 shadow' : ''}`}
+                            >
+                                Statistics
+                            </button>
                         </div>
                         {/* Result Sheet Design Selector */}
                         <div className="relative">
@@ -559,6 +567,23 @@ const ResultManager: React.FC<ResultManagerProps> = ({
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {selectedTermId && viewMode === 'statistics' && (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold">Level Statistics & Rankings</h2>
+                    <LevelStatisticsDashboard
+                        termId={Number(selectedTermId)}
+                        studentTermReports={studentTermReports}
+                        students={students}
+                        academicClasses={academicClasses}
+                        academicClassStudents={academicClassStudents}
+                        gradingScheme={schoolConfig?.active_grading_scheme_id 
+                            ? gradingSchemes.find(gs => gs.id === schoolConfig.active_grading_scheme_id) || null
+                            : null
+                        }
+                    />
                 </div>
             )}
         </div>
