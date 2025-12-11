@@ -230,7 +230,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: sync_all_students_for_term (3 parameters - PRIMARY VERSION)
+-- Function: sync_all_students_for_term (3 parameters with optional preserve_manual - PRIMARY VERSION)
 CREATE OR REPLACE FUNCTION sync_all_students_for_term(
     p_term_id INTEGER,
     p_school_id INTEGER,
@@ -277,7 +277,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function: admin_sync_student_enrollments (3 parameters - PRIMARY VERSION)
+-- Function: admin_sync_student_enrollments (3 parameters with optional preserve_manual - PRIMARY VERSION)
 CREATE OR REPLACE FUNCTION admin_sync_student_enrollments(
     p_term_id INTEGER,
     p_school_id INTEGER,
