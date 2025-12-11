@@ -5,7 +5,7 @@ import type { StudentTermReportDetails, GradingScheme, StudentInvoice } from '..
 import Spinner from './common/Spinner';
 import { LockClosedIcon, ShieldIcon } from './common/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { getAttendanceStatus, type AttendanceData } from '../utils/attendanceHelpers';
+import { getAttendanceStatus, getAttendanceProgressColor, type AttendanceData } from '../utils/attendanceHelpers';
 
 interface StudentReportViewProps {
   studentId: number;
@@ -106,7 +106,7 @@ const AttendanceSummary: React.FC<{ attendance: AttendanceData }> = ({ attendanc
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-4 mb-2">
                     <div 
-                        className={`h-4 rounded-full transition-all ${rate >= 90 ? 'bg-green-500' : rate >= 80 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        className={`h-4 rounded-full transition-all ${getAttendanceProgressColor(rate)}`}
                         style={{ width: `${Math.min(rate, 100)}%` }}
                     ></div>
                 </div>

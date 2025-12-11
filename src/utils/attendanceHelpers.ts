@@ -47,6 +47,28 @@ export const getAttendanceStatus = (rate: number): AttendanceStatus => {
     };
 };
 
+/**
+ * Get progress bar color CSS class based on attendance rate
+ * @param rate - Attendance rate as a percentage (0-100)
+ * @returns CSS class string for the progress bar color
+ */
+export const getAttendanceProgressColor = (rate: number): string => {
+    if (rate >= 90) return 'bg-green-500';
+    if (rate >= 80) return 'bg-yellow-500';
+    return 'bg-red-500';
+};
+
+/**
+ * Get progress bar color for print/classic templates
+ * @param rate - Attendance rate as a percentage (0-100)
+ * @returns CSS class string for the progress bar color
+ */
+export const getAttendanceProgressColorPrint = (rate: number): string => {
+    if (rate >= 90) return 'bg-green-600';
+    if (rate >= 80) return 'bg-yellow-500';
+    return 'bg-red-600';
+};
+
 export interface AttendanceData {
     present: number;
     absent: number;

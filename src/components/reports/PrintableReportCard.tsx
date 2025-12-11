@@ -1,5 +1,5 @@
 import React from 'react';
-import { getAttendanceStatus } from '../../utils/attendanceHelpers';
+import { getAttendanceStatus, getAttendanceProgressColor, getAttendanceProgressColorPrint } from '../../utils/attendanceHelpers';
 
 interface Subject {
   name: string;
@@ -191,7 +191,7 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                   <div 
-                    className={`h-4 rounded-full transition-all ${attendance.rate >= 90 ? 'bg-green-500' : attendance.rate >= 80 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    className={`h-4 rounded-full transition-all ${getAttendanceProgressColor(attendance.rate)}`}
                     style={{ width: `${Math.min(attendance.rate, 100)}%` }}
                   ></div>
                 </div>
@@ -397,7 +397,7 @@ export const PrintableReportCard: React.FC<PrintableReportCardProps> = ({
               </div>
               <div className="w-full bg-gray-300 h-4 mb-2 border border-gray-400">
                 <div 
-                  className={`h-full ${attendance.rate >= 90 ? 'bg-green-600' : attendance.rate >= 80 ? 'bg-yellow-500' : 'bg-red-600'}`}
+                  className={`h-full ${getAttendanceProgressColorPrint(attendance.rate)}`}
                   style={{ width: `${Math.min(attendance.rate, 100)}%` }}
                 ></div>
               </div>
