@@ -2057,8 +2057,8 @@ BEGIN
             WHERE school_id = NEW.school_id 
               AND is_active = TRUE
         LOOP
-            -- Sync student for this term
-            PERFORM sync_student_enrollment(NEW.id, v_active_term.id, NEW.school_id);
+            -- Sync student for this term (preserve manual enrollments by default)
+            PERFORM sync_student_enrollment(NEW.id, v_active_term.id, NEW.school_id, TRUE);
         END LOOP;
     END IF;
     
@@ -2083,8 +2083,8 @@ BEGIN
     IF (TG_OP = 'INSERT' AND NEW.is_active = TRUE) OR 
        (TG_OP = 'UPDATE' AND OLD.is_active = FALSE AND NEW.is_active = TRUE) THEN
         
-        -- Sync all students for this term
-        PERFORM sync_all_students_for_term(NEW.id, NEW.school_id);
+        -- Sync all students for this term (preserve manual enrollments by default)
+        PERFORM sync_all_students_for_term(NEW.id, NEW.school_id, TRUE);
     END IF;
     
     RETURN NEW;

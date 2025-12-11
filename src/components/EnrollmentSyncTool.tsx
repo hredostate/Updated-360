@@ -471,6 +471,14 @@ const EnrollmentSyncTool: React.FC<EnrollmentSyncToolProps> = ({ terms, schoolId
                         <span className="text-blue-600 dark:text-blue-400">•</span>
                         <span><strong>Matching:</strong> Students are enrolled in academic classes where level matches their class name and arm matches their arm name.</span>
                     </li>
+                    <li className="flex gap-2">
+                        <span className="text-blue-600 dark:text-blue-400">•</span>
+                        <span><strong>Manual Enrollments:</strong> Students enrolled through the Academic Class Manager UI are marked as manual and protected from removal during sync (when preserve option is enabled).</span>
+                    </li>
+                    <li className="flex gap-2">
+                        <span className="text-blue-600 dark:text-blue-400">•</span>
+                        <span><strong>Preserve Option:</strong> By default, manual enrollments are preserved during sync. Uncheck "Preserve manual enrollments" only if you want to completely reset all enrollments based on student class/arm assignments.</span>
+                    </li>
                 </ul>
             </div>
         </div>

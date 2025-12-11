@@ -290,6 +290,51 @@ $$ LANGUAGE plpgsql;
 -- The existing trigger already only fires on class_id/arm_id changes
 -- No changes needed to trigger_sync_student_enrollment
 
+-- 5. Update triggers to use preserve_manual by default
+CREATE OR REPLACE FUNCTION trigger_sync_student_enrollment()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_active_term RECORD;
+    v_result JSONB;
+BEGIN
+    -- Only sync if class_id or arm_id changed
+    IF (TG_OP = 'UPDATE' AND (
+        OLD.class_id IS DISTINCT FROM NEW.class_id OR 
+        OLD.arm_id IS DISTINCT FROM NEW.arm_id
+    )) OR TG_OP = 'INSERT' THEN
+        
+        -- Get all active terms for this school
+        FOR v_active_term IN 
+            SELECT id FROM terms 
+            WHERE school_id = NEW.school_id 
+              AND is_active = TRUE
+        LOOP
+            -- Sync student for this term (preserve manual enrollments by default)
+            PERFORM sync_student_enrollment(NEW.id, v_active_term.id, NEW.school_id, TRUE);
+        END LOOP;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION trigger_sync_enrollments_on_term()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_result JSONB;
+BEGIN
+    -- When a term becomes active (created as active or changed to active)
+    IF (TG_OP = 'INSERT' AND NEW.is_active = TRUE) OR 
+       (TG_OP = 'UPDATE' AND OLD.is_active = FALSE AND NEW.is_active = TRUE) THEN
+        
+        -- Sync all students for this term (preserve manual enrollments by default)
+        PERFORM sync_all_students_for_term(NEW.id, NEW.school_id, TRUE);
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 6. Update comments
 COMMENT ON COLUMN public.academic_class_students.manually_enrolled IS 
     'TRUE if enrollment was manually added through UI, FALSE if auto-synced. Manual enrollments are preserved during sync operations.';
