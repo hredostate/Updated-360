@@ -4704,7 +4704,8 @@ const App: React.FC = () => {
             }
             
             // Step 5: Re-fetch enrollment data from database to ensure UI sync
-            // Fetch all enrollments to ensure complete state synchronization
+            // Note: Fetches all enrollments to maintain consistency with initial data load pattern.
+            // For future optimization: consider filtering by school_id via join if dataset grows large.
             const { data: freshEnrollments, error: refreshError } = await supabase
                 .from('academic_class_students')
                 .select('*');
