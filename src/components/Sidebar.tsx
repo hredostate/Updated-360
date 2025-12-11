@@ -390,6 +390,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userProfile,
                    <li key={group.id} className="mb-1">
                       <button
                         onClick={() => toggleGroup(group.id)}
+                        aria-expanded={isExpanded}
+                        aria-label={`${group.label} menu`}
                         className={`flex items-center w-full p-3 text-sm font-bold rounded-xl transition-all duration-200 group ${isActiveGroup ? 'bg-indigo-50/80 dark:bg-indigo-900/20 shadow-sm' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                       >
                         <div className={`p-1.5 rounded-lg mr-3 transition-colors ${isActiveGroup ? 'bg-indigo-200/50 text-indigo-700 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>
@@ -446,6 +448,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userProfile,
                               <li key={subMenuKey} className="mt-1">
                                 <button
                                   onClick={() => toggleSubMenu(subMenuKey)}
+                                  aria-expanded={isSubMenuExpanded}
+                                  aria-label={`${subMenu.label} submenu`}
                                   className={`flex items-center py-2 pl-9 pr-3 w-full text-xs font-bold rounded-lg transition-all duration-200 relative z-10 group/submenu ${
                                     isSubMenuActive 
                                       ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-50/30 dark:bg-indigo-900/10'
