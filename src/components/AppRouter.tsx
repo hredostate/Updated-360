@@ -75,6 +75,7 @@ const StudentHomeworkView = lazy(() => import('./StudentHomeworkView'));
 const NotesComplianceTracker = lazy(() => import('./NotesComplianceTracker'));
 const StudentLessonPortal = lazy(() => import('./StudentLessonPortal'));
 const NotificationHistory = lazy(() => import('./NotificationHistory'));
+const AbsenceRequestsView = lazy(() => import('./AbsenceRequestsView'));
 
 interface AppRouterProps {
     currentView: string;
@@ -739,6 +740,17 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                 allRequests={data.leaveRequests}
                 onUpdateStatus={actions.handleUpdateLeaveRequestStatus}
                 teams={data.teams}
+             />;
+        case VIEWS.ABSENCE_REQUESTS:
+             return <AbsenceRequestsView 
+                absenceRequests={data.absenceRequests}
+                students={data.students}
+                currentUserId={data.userProfile.id}
+                userRole={data.userProfile.role}
+                userPermissions={data.userPermissions}
+                onCreateRequest={actions.handleCreateAbsenceRequest}
+                onApproveRequest={actions.handleApproveAbsenceRequest}
+                onDenyRequest={actions.handleDenyAbsenceRequest}
              />;
         case VIEWS.MY_ADJUSTMENTS:
              return <MyAdjustmentsView 

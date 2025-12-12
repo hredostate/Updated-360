@@ -1770,3 +1770,29 @@ export interface LevelStatistics {
     grade_distribution: GradeDistribution[];
     arms: ArmStatistics[];
 }
+
+// Absence Request Types
+export type AbsenceRequestType = 'sick' | 'family' | 'appointment' | 'vacation' | 'other';
+export type AbsenceRequestStatus = 'pending' | 'approved' | 'denied';
+
+export interface AbsenceRequest {
+    id: number;
+    school_id: number;
+    student_id: number;
+    requested_by: string;
+    request_type: AbsenceRequestType;
+    start_date: string;
+    end_date: string;
+    reason: string;
+    supporting_document_url?: string;
+    status: AbsenceRequestStatus;
+    reviewed_by?: string;
+    reviewed_at?: string;
+    review_notes?: string;
+    created_at: string;
+    updated_at: string;
+    // Joined data
+    student?: Student;
+    requester?: UserProfile;
+    reviewer?: UserProfile;
+}

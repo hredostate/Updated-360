@@ -143,6 +143,7 @@ export const VIEWS = {
   STUDENT_HOMEWORK: 'My Homework',
   NOTES_COMPLIANCE: 'Notes Compliance',
   NOTIFICATION_HISTORY: 'Notification History',
+  ABSENCE_REQUESTS: 'Absence Requests',
 } as const;
 
 export const STUDENT_STATUSES = [

@@ -3,7 +3,7 @@ import type { Session, User } from '@supabase/auth-js';
 import { supabaseError } from './services/supabaseClient';
 import { initializeAIClient, getAIClient, getAIClientError } from './services/aiClient';
 import type { OpenAI } from 'openai';
-import { Team, TeamFeedback, TeamPulse, Task, TaskPriority, TaskStatus, ReportType, CoverageStatus, RoleTitle, Student, UserProfile, ReportRecord, ReportComment, Announcement, Notification, ToastMessage, RoleDetails, PositiveBehaviorRecord, StudentAward, StaffAward, AIProfileInsight, AtRiskStudent, Alert, StudentInterventionPlan, SIPLog, SchoolHealthReport, SchoolSettings, PolicyInquiry, LivingPolicySnippet, AtRiskTeacher, InventoryItem, CalendarEvent, LessonPlan, CurriculumReport, LessonPlanAnalysis, DailyBriefing, StudentProfile, TeachingAssignment, BaseDataObject, Survey, SurveyWithQuestions, TeacherRatingWeekly, SuggestedTask, SchoolImprovementPlan, Curriculum, CurriculumWeek, CoverageDeviation, ClassGroup, AttendanceSchedule, AttendanceRecord, UPSSGPTResponse, SchoolConfig, Term, AcademicClass, AcademicTeachingAssignment, GradingScheme, GradingSchemeRule, AcademicClassStudent, ScoreEntry, StudentTermReport, AuditLog, Assessment, AssessmentScore, CoverageVote, RewardStoreItem, PayrollRun, PayrollItem, PayrollAdjustment, Campus, TeacherCheckin, CheckinAnomaly, LeaveType, LeaveRequest, LeaveRequestStatus, TeacherShift, FutureRiskPrediction, AssessmentStructure, SocialMediaAnalytics, SocialAccount, CreatedCredential, NavigationContext, TeacherMood, Order, OrderStatus, StudentTermReportSubject, UserRoleAssignment, StudentFormData, PayrollUpdateData, CommunicationLogData, ZeroScoreEntry } from './types';
+import { Team, TeamFeedback, TeamPulse, Task, TaskPriority, TaskStatus, ReportType, CoverageStatus, RoleTitle, Student, UserProfile, ReportRecord, ReportComment, Announcement, Notification, ToastMessage, RoleDetails, PositiveBehaviorRecord, StudentAward, StaffAward, AIProfileInsight, AtRiskStudent, Alert, StudentInterventionPlan, SIPLog, SchoolHealthReport, SchoolSettings, PolicyInquiry, LivingPolicySnippet, AtRiskTeacher, InventoryItem, CalendarEvent, LessonPlan, CurriculumReport, LessonPlanAnalysis, DailyBriefing, StudentProfile, TeachingAssignment, BaseDataObject, Survey, SurveyWithQuestions, TeacherRatingWeekly, SuggestedTask, SchoolImprovementPlan, Curriculum, CurriculumWeek, CoverageDeviation, ClassGroup, AttendanceSchedule, AttendanceRecord, UPSSGPTResponse, SchoolConfig, Term, AcademicClass, AcademicTeachingAssignment, GradingScheme, GradingSchemeRule, AcademicClassStudent, ScoreEntry, StudentTermReport, AuditLog, Assessment, AssessmentScore, CoverageVote, RewardStoreItem, PayrollRun, PayrollItem, PayrollAdjustment, Campus, TeacherCheckin, CheckinAnomaly, LeaveType, LeaveRequest, LeaveRequestStatus, TeacherShift, FutureRiskPrediction, AssessmentStructure, SocialMediaAnalytics, SocialAccount, CreatedCredential, NavigationContext, TeacherMood, Order, OrderStatus, StudentTermReportSubject, UserRoleAssignment, StudentFormData, PayrollUpdateData, CommunicationLogData, ZeroScoreEntry, AbsenceRequest, AbsenceRequestType } from './types';
 
 import { MOCK_SOCIAL_ACCOUNTS, MOCK_TOUR_CONTENT, MOCK_SOCIAL_ANALYTICS } from './services/mockData';
 import { extractAndParseJson } from './utils/json';
@@ -103,6 +103,7 @@ const HRPayrollModule = lazyWithRetry(() => import('./components/HRPayrollModule
 const StoreManager = lazyWithRetry(() => import('./components/StoreManager'));
 const ZeroScoreMonitorView = lazyWithRetry(() => import('./components/ZeroScoreMonitorView'));
 const AppRouter = lazyWithRetry(() => import('./components/AppRouter'));
+const AbsenceRequestsView = lazyWithRetry(() => import('./components/AbsenceRequestsView'));
 
 // Auth-only views that authenticated users should not access
 const AUTH_ONLY_VIEWS = ['teacher-login', 'student-login', 'landing', 'public-ratings'];
@@ -349,6 +350,7 @@ const App: React.FC = () => {
     const [teacherCheckins, setTeacherCheckins] = useState<TeacherCheckin[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
     const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+    const [absenceRequests, setAbsenceRequests] = useState<AbsenceRequest[]>([]);
     const [teacherShifts, setTeacherShifts] = useState<TeacherShift[]>([]);
     const [teachingEntities, setTeachingEntities] = useState<TeachingAssignment[]>([]);
     const [socialMediaAnalytics, setSocialMediaAnalytics] = useState<SocialMediaAnalytics[]>(MOCK_SOCIAL_ACCOUNTS ? MOCK_SOCIAL_ANALYTICS : []);
@@ -923,6 +925,7 @@ const App: React.FC = () => {
                             supabase.from('teacher_checkins').select('*'),
                             supabase.from('leave_types').select('*'),
                             supabase.from('leave_requests').select('*, leave_type:leave_types(*), requester:user_profiles!requester_id(*)'),
+                            supabase.from('absence_requests').select('*, student:students(*, class:classes(name), arm:arms(name)), requester:user_profiles!requested_by(name), reviewer:user_profiles!reviewed_by(name)'),
                             supabase.from('teacher_shifts').select('*'),
                             supabase.from('assessment_structures').select('*'),
                             supabase.from('teaching_entities').select('*, teacher:user_profiles!user_id(name), class:classes(name), arm:arms(name), subject:subjects(name))'),
@@ -1058,10 +1061,11 @@ const App: React.FC = () => {
                             setTeacherCheckins(getData(42));
                             setLeaveTypes(getData(43));
                             setLeaveRequests(getData(44));
-                            setTeacherShifts(getData(45));
-                            setAssessmentStructures(getData(46));
-                            setTeachingEntities(getData(47));
-                            setOrders(getData(48));
+                            setAbsenceRequests(getData(45));
+                            setTeacherShifts(getData(46));
+                            setAssessmentStructures(getData(47));
+                            setTeachingEntities(getData(48));
+                            setOrders(getData(49));
 
                             const combinedSchemes = (schemesData as GradingScheme[]).map(scheme => ({
                                 ...scheme,
@@ -4366,6 +4370,90 @@ const App: React.FC = () => {
         }
     }, [userProfile, addToast]);
 
+    // --- Absence Request Handlers ---
+    const handleCreateAbsenceRequest = useCallback(async (data: {
+        student_id: number;
+        request_type: AbsenceRequestType;
+        start_date: string;
+        end_date: string;
+        reason: string;
+        supporting_document_url?: string;
+    }): Promise<void> => {
+        if (!userProfile) throw new Error('User not authenticated');
+        
+        const requestData = {
+            ...data,
+            school_id: userProfile.school_id,
+            requested_by: userProfile.id,
+            status: 'pending'
+        };
+
+        const { data: newRequest, error } = await Offline.insert('absence_requests', requestData);
+        if (error) throw new Error(error.message);
+        
+        // Fetch the full request with joined data
+        const { data: fullRequest, error: fetchError } = await supabase
+            .from('absence_requests')
+            .select('*, student:students(*, class:classes(name), arm:arms(name)), requester:user_profiles!requested_by(name), reviewer:user_profiles!reviewed_by(name)')
+            .eq('id', (newRequest as any).id)
+            .single();
+        
+        if (fetchError) throw new Error(fetchError.message);
+        if (fullRequest) setAbsenceRequests(prev => [fullRequest as any, ...prev]);
+        
+        addToast('Absence request submitted successfully', 'success');
+    }, [userProfile, addToast]);
+
+    const handleApproveAbsenceRequest = useCallback(async (requestId: number, notes: string): Promise<void> => {
+        if (!userProfile) throw new Error('User not authenticated');
+        
+        const { error } = await Offline.update('absence_requests', {
+            status: 'approved',
+            reviewed_by: userProfile.id,
+            reviewed_at: new Date().toISOString(),
+            review_notes: notes
+        }, { id: requestId });
+        
+        if (error) throw new Error(error.message);
+        
+        // Fetch updated request with joined data
+        const { data: updatedRequest, error: fetchError } = await supabase
+            .from('absence_requests')
+            .select('*, student:students(*, class:classes(name), arm:arms(name)), requester:user_profiles!requested_by(name), reviewer:user_profiles!reviewed_by(name)')
+            .eq('id', requestId)
+            .single();
+        
+        if (fetchError) throw new Error(fetchError.message);
+        
+        setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest as any : r));
+        addToast('Absence request approved', 'success');
+    }, [userProfile, addToast]);
+
+    const handleDenyAbsenceRequest = useCallback(async (requestId: number, notes: string): Promise<void> => {
+        if (!userProfile) throw new Error('User not authenticated');
+        
+        const { error } = await Offline.update('absence_requests', {
+            status: 'denied',
+            reviewed_by: userProfile.id,
+            reviewed_at: new Date().toISOString(),
+            review_notes: notes
+        }, { id: requestId });
+        
+        if (error) throw new Error(error.message);
+        
+        // Fetch updated request with joined data
+        const { data: updatedRequest, error: fetchError } = await supabase
+            .from('absence_requests')
+            .select('*, student:students(*, class:classes(name), arm:arms(name)), requester:user_profiles!requested_by(name), reviewer:user_profiles!reviewed_by(name)')
+            .eq('id', requestId)
+            .single();
+        
+        if (fetchError) throw new Error(fetchError.message);
+        
+        setAbsenceRequests(prev => prev.map(r => r.id === requestId ? updatedRequest as any : r));
+        addToast('Absence request denied', 'success');
+    }, [userProfile, addToast]);
+
     // --- Subject/Class/Arm Handlers ---
     const handleSaveSubject = useCallback(async (subject: Partial<BaseDataObject>): Promise<boolean> => {
         if (!userProfile) return false;
@@ -5198,6 +5286,7 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                                         teacherCheckins,
                                         leaveTypes,
                                         leaveRequests,
+                                        absenceRequests,
                                         teacherShifts,
                                         teachingEntities,
                                         orders,
@@ -5330,6 +5419,9 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                                         handleCreateLeaveRequest,
                                         handleDeleteLeaveRequest,
                                         handleUpdateLeaveRequestStatus,
+                                        handleCreateAbsenceRequest,
+                                        handleApproveAbsenceRequest,
+                                        handleDenyAbsenceRequest,
                                         handleSaveCampus,
                                         handleDeleteCampus,
                                         handleSaveShift,
