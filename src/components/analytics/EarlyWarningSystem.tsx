@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { RiskPrediction, Student } from '../../types';
+import type { RiskPrediction, Student, ReportRecord, ScoreEntry, AssessmentScore, Assessment, ClassGroup } from '../../types';
 import { 
   predictStudentRisk, 
   batchPredictRisks, 
@@ -10,20 +10,115 @@ import { AlertCircleIcon, TrendingDownIcon, TrendingUpIcon, MinusIcon, ActivityI
 interface EarlyWarningSystemProps {
   students: Student[];
   onViewStudent: (student: Student) => void;
+  // Real data sources
+  reports?: ReportRecord[];
+  scoreEntries?: ScoreEntry[];
+  assessments?: Assessment[];
+  assessmentScores?: AssessmentScore[];
+  classGroups?: ClassGroup[];
 }
 
 const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({ 
   students, 
-  onViewStudent 
+  onViewStudent,
+  reports = [],
+  scoreEntries = [],
+  assessments = [],
+  assessmentScores = [],
+  classGroups = []
 }) => {
   // Add null safety with default empty array
   const safeStudents = students || [];
+  const safeReports = reports || [];
+  const safeScoreEntries = scoreEntries || [];
+  const safeAssessments = assessments || [];
+  const safeAssessmentScores = assessmentScores || [];
+  const safeClassGroups = classGroups || [];
 
   const [predictions, setPredictions] = useState<RiskPrediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedPrediction, setSelectedPrediction] = useState<RiskPrediction | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [filterLevel, setFilterLevel] = useState<string>('all');
+
+  // Helper function to calculate attendance rate for a student
+  const calculateAttendanceRate = (studentId: number): number | null => {
+    const studentRecords: any[] = [];
+    
+    // Collect all attendance records for this student from all class groups
+    safeClassGroups.forEach(group => {
+      const member = group.members?.find(m => m.student_id === studentId);
+      if (member && member.records) {
+        studentRecords.push(...member.records);
+      }
+    });
+    
+    if (studentRecords.length === 0) return null;
+    
+    const presentCount = studentRecords.filter(r => 
+      ['present', 'p'].includes(r.status?.toLowerCase() || '')
+    ).length;
+    
+    return (presentCount / studentRecords.length) * 100;
+  };
+
+  // Helper function to calculate grade average for a student
+  const calculateGradeAverage = (studentId: number): number | null => {
+    const studentScores = safeScoreEntries.filter(se => se.student_id === studentId);
+    
+    if (studentScores.length === 0) return null;
+    
+    const totalScore = studentScores.reduce((sum, se) => sum + (se.total_score || 0), 0);
+    return totalScore / studentScores.length;
+  };
+
+  // Helper function to count behavior incidents for a student
+  const countBehaviorIncidents = (studentId: number): number => {
+    return safeReports.filter(r => 
+      r.report_type === 'Infraction' && r.involved_students?.includes(studentId)
+    ).length;
+  };
+
+  // Helper function to calculate assignment completion rate for a student
+  const calculateAssignmentCompletionRate = (studentId: number): number | null => {
+    if (safeAssessments.length === 0) return null;
+    
+    const studentAssessmentScores = safeAssessmentScores.filter(as => as.student_id === studentId);
+    
+    if (studentAssessmentScores.length === 0) return null;
+    
+    const completedCount = studentAssessmentScores.filter(as => as.score !== null).length;
+    return (completedCount / studentAssessmentScores.length) * 100;
+  };
+
+  // Helper function to get recent grades for a student
+  const getRecentGrades = (studentId: number, count: number = 6): number[] => {
+    const studentScores = safeScoreEntries
+      .filter(se => se.student_id === studentId)
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+      .slice(0, count)
+      .map(se => se.total_score || 0);
+    
+    return studentScores;
+  };
+
+  // Helper function to get recent attendance for a student
+  const getRecentAttendance = (studentId: number, count: number = 10): boolean[] => {
+    const studentRecords: any[] = [];
+    
+    safeClassGroups.forEach(group => {
+      const member = group.members?.find(m => m.student_id === studentId);
+      if (member && member.records) {
+        studentRecords.push(...member.records);
+      }
+    });
+    
+    const sortedRecords = studentRecords
+      .sort((a, b) => new Date(b.session_date || '').getTime() - new Date(a.session_date || '').getTime())
+      .slice(0, count);
+    
+    return sortedRecords.map(r => ['present', 'p'].includes(r.status?.toLowerCase() || ''));
+  };
 
   // Generate predictions for all students
   const generatePredictions = async () => {
@@ -35,17 +130,25 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
         return;
       }
 
-      // Mock data for demonstration - in production, fetch from API
-      // TODO: Replace with actual student metrics from database
-      const studentsData = safeStudents.slice(0, 20).map(student => ({
-        student,
-        attendanceRate: 70 + Math.random() * 30,
-        gradeAverage: 40 + Math.random() * 50,
-        behaviorIncidents: Math.floor(Math.random() * 7),
-        assignmentCompletionRate: 60 + Math.random() * 40,
-        recentGrades: Array(6).fill(0).map(() => 40 + Math.random() * 50),
-        recentAttendance: Array(10).fill(false).map(() => Math.random() > 0.2),
-      }));
+      // Calculate real metrics from database
+      const studentsData = safeStudents.slice(0, 20).map(student => {
+        const attendanceRate = calculateAttendanceRate(student.id);
+        const gradeAverage = calculateGradeAverage(student.id);
+        const behaviorIncidents = countBehaviorIncidents(student.id);
+        const assignmentCompletionRate = calculateAssignmentCompletionRate(student.id);
+        const recentGrades = getRecentGrades(student.id);
+        const recentAttendance = getRecentAttendance(student.id);
+
+        return {
+          student,
+          attendanceRate: attendanceRate ?? 0,  // Use 0 if no data
+          gradeAverage: gradeAverage ?? 0,      // Use 0 if no data
+          behaviorIncidents,
+          assignmentCompletionRate: assignmentCompletionRate ?? 0,  // Use 0 if no data
+          recentGrades: recentGrades.length > 0 ? recentGrades : [0],
+          recentAttendance: recentAttendance.length > 0 ? recentAttendance : [false],
+        };
+      });
 
       const results = await batchPredictRisks(studentsData);
       setPredictions(results);

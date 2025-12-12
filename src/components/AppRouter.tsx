@@ -318,6 +318,11 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                 <PredictiveAnalyticsDashboard 
                     students={data.students}
                     onViewStudent={actions.setSelectedStudent}
+                    reports={data.reports}
+                    scoreEntries={data.scoreEntries}
+                    assessments={data.assessments}
+                    assessmentScores={data.assessmentScores}
+                    classGroups={data.classGroups}
                 />
             </Suspense>;
         case VIEWS.ZERO_SCORE_MONITOR:
