@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import type { SchoolConfig, Term, AcademicClass, AcademicTeachingAssignment, GradingScheme, UserProfile, RoleDetails, RoleTitle, AuditLog, BaseDataObject, InventoryItem, RewardStoreItem, Campus, AssessmentStructure, TeachingAssignment, Student, AcademicClassStudent, ClassSubject } from '../types';
+import type { SchoolConfig, Term, AcademicClass, AcademicTeachingAssignment, GradingScheme, UserProfile, RoleDetails, RoleTitle, AuditLog, BaseDataObject, InventoryItem, RewardStoreItem, Campus, AssessmentStructure, TeachingAssignment, Student, AcademicClassStudent, ClassSubject, TeacherShift, LeaveType } from '../types';
 import RoleManager from './RoleManager';
 import AuditLogView from './AuditLogView';
 import BrandingSettings from './BrandingSettings';

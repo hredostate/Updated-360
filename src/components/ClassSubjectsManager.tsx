@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import type { BaseDataObject, ClassSubject } from '../types';
 import Spinner from './common/Spinner';
@@ -222,12 +221,6 @@ const ClassSubjectsManager: React.FC<ClassSubjectsManagerProps> = ({
                             );
                         })}
                     </div>
-
-                    {subjects.length === 0 && (
-                        <div className="text-center py-8 text-slate-600 dark:text-slate-400">
-                            No subjects available. Add subjects in the Subjects tab.
-                        </div>
-                    )}
                 </div>
             )}
         </div>
