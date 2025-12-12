@@ -41,7 +41,10 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [filterLevel, setFilterLevel] = useState<string>('all');
 
-  // Helper function to calculate attendance rate for a student
+  /**
+   * Calculate attendance rate for a student from class group records.
+   * @returns Percentage (0-100) or null if no attendance data exists
+   */
   const calculateAttendanceRate = (studentId: number): number | null => {
     const studentRecords: { status?: string; session_date?: string }[] = [];
     
@@ -62,7 +65,10 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
     return (presentCount / studentRecords.length) * 100;
   };
 
-  // Helper function to calculate grade average for a student
+  /**
+   * Calculate grade average for a student from score entries.
+   * @returns Average score or null if no grade data exists
+   */
   const calculateGradeAverage = (studentId: number): number | null => {
     const studentScores = safeScoreEntries.filter(se => se.student_id === studentId);
     
@@ -72,14 +78,20 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
     return totalScore / studentScores.length;
   };
 
-  // Helper function to count behavior incidents for a student
+  /**
+   * Count behavior incidents for a student from infraction reports.
+   * @returns Number of infractions (0 if none)
+   */
   const countBehaviorIncidents = (studentId: number): number => {
     return safeReports.filter(r => 
       r.report_type === 'Infraction' && r.involved_students?.includes(studentId)
     ).length;
   };
 
-  // Helper function to calculate assignment completion rate for a student
+  /**
+   * Calculate assignment completion rate for a student.
+   * @returns Percentage (0-100) or null if no assignment data exists
+   */
   const calculateAssignmentCompletionRate = (studentId: number): number | null => {
     if (safeAssessments.length === 0) return null;
     
@@ -91,34 +103,47 @@ const EarlyWarningSystem: React.FC<EarlyWarningSystemProps> = ({
     return (completedCount / studentAssessmentScores.length) * 100;
   };
 
-  // Helper function to get recent grades for a student
+  /**
+   * Get recent grades for a student, sorted by most recent first.
+   * @returns Array of up to 'count' most recent scores (empty array if no data)
+   */
   const getRecentGrades = (studentId: number, count: number = 6): number[] => {
-    const studentScores = safeScoreEntries
+    const studentScoresWithTimestamp = safeScoreEntries
       .filter(se => se.student_id === studentId)
-      .map(se => ({ ...se, timestamp: new Date(se.created_at || '').getTime() }))
+      .map(se => ({ 
+        total_score: se.total_score || 0, 
+        timestamp: new Date(se.created_at || '').getTime() 
+      }));
+    
+    const studentScores = studentScoresWithTimestamp
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, count)
-      .map(se => se.total_score || 0);
+      .map(se => se.total_score);
     
     return studentScores;
   };
 
-  // Helper function to get recent attendance for a student
+  /**
+   * Get recent attendance records for a student, sorted by most recent first.
+   * @returns Array of up to 'count' most recent attendance statuses (empty array if no data)
+   */
   const getRecentAttendance = (studentId: number, count: number = 10): boolean[] => {
-    const studentRecords: { status?: string; session_date?: string; timestamp?: number }[] = [];
+    const studentRecordsWithTimestamp: { status?: string; timestamp: number }[] = [];
     
     safeClassGroups.forEach(group => {
       const member = group.members?.find(m => m.student_id === studentId);
       if (member && member.records) {
-        studentRecords.push(...member.records.map(r => ({
-          ...r,
-          timestamp: new Date(r.session_date || '').getTime()
-        })));
+        member.records.forEach(r => {
+          studentRecordsWithTimestamp.push({
+            status: r.status,
+            timestamp: new Date(r.session_date || '').getTime()
+          });
+        });
       }
     });
     
-    const sortedRecords = studentRecords
-      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+    const sortedRecords = studentRecordsWithTimestamp
+      .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, count);
     
     return sortedRecords.map(r => ['present', 'p'].includes(r.status?.toLowerCase() || ''));
