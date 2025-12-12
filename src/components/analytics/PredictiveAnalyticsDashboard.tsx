@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Student } from '../../types';
+import type { Student, ReportRecord, ScoreEntry, Assessment, AssessmentScore, ClassGroup } from '../../types';
 import EarlyWarningSystem from './EarlyWarningSystem';
 import PersonalizedLearningPath from './PersonalizedLearningPath';
 import SmartScheduler from './SmartScheduler';
@@ -18,6 +18,12 @@ import {
 interface PredictiveAnalyticsDashboardProps {
   students: Student[];
   onViewStudent: (student: Student) => void;
+  // Additional data for real analytics
+  reports?: ReportRecord[];
+  scoreEntries?: ScoreEntry[];
+  assessments?: Assessment[];
+  assessmentScores?: AssessmentScore[];
+  classGroups?: ClassGroup[];
 }
 
 type TabType = 'overview' | 'early-warning' | 'learning-paths' | 'scheduler' | 'reports';
@@ -25,6 +31,11 @@ type TabType = 'overview' | 'early-warning' | 'learning-paths' | 'scheduler' | '
 const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> = ({
   students,
   onViewStudent,
+  reports = [],
+  scoreEntries = [],
+  assessments = [],
+  assessmentScores = [],
+  classGroups = []
 }) => {
   // Add null safety with default empty array
   const safeStudents = students || [];
@@ -257,7 +268,15 @@ const PredictiveAnalyticsDashboard: React.FC<PredictiveAnalyticsDashboardProps> 
         )}
 
         {activeTab === 'early-warning' && (
-          <EarlyWarningSystem students={safeStudents} onViewStudent={onViewStudent} />
+          <EarlyWarningSystem 
+            students={safeStudents} 
+            onViewStudent={onViewStudent}
+            reports={reports}
+            scoreEntries={scoreEntries}
+            assessments={assessments}
+            assessmentScores={assessmentScores}
+            classGroups={classGroups}
+          />
         )}
 
         {activeTab === 'learning-paths' && (
