@@ -90,7 +90,7 @@ const PayrollAdjustmentsManager: React.FC<PayrollAdjustmentsManagerProps> = ({ u
     const handleSave = async (data: Partial<Omit<PayrollAdjustment, 'id' | 'user_id'>> & { id?: number, user_ids?: string[] }) => {
         const { user_ids, id, ...rest } = data;
         
-        // Always store positive amounts, let adjustment_type determine the sign during payroll calculation
+        // Fix: Store all amounts as positive values to prevent double-negation bug where deductions were incorrectly added instead of subtracted during payroll calculation
         const amount = Math.abs(Number(rest.amount));
 
         if (id) {
