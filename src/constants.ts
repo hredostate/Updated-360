@@ -135,6 +135,7 @@ export const VIEWS = {
   PREDICTIVE_ANALYTICS: 'Predictive Analytics',
   SCORE_REVIEW: 'Score Review', // Team Lead/Admin view of all scores
   CAMPUS_STATISTICS: 'Campus Statistics',
+  ZERO_SCORE_MONITOR: 'Zero Score Monitor', // Admin view to review zero score entries
   // Lesson Plan Enhancement Views
   COVERAGE_DASHBOARD: 'Coverage Dashboard',
   REVIEW_DASHBOARD: 'Review Dashboard',
