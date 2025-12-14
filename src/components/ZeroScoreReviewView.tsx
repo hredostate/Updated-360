@@ -245,8 +245,26 @@ const ZeroScoreReviewView: React.FC<ZeroScoreReviewViewProps> = ({
         }
     };
 
+    // Helper function for null safety check
+    const isValidDataArray = (data: any): data is ZeroScoreEntry[] => {
+        return data && Array.isArray(data);
+    };
+
+    // Helper function for deduplicating items by id
+    const deduplicateById = <T extends { id: number | string }>(items: (T | null | undefined)[]): T[] => {
+        const seen = new Set<number | string>();
+        const result: T[] = [];
+        for (const item of items) {
+            if (item && !seen.has(item.id)) {
+                seen.add(item.id);
+                result.push(item);
+            }
+        }
+        return result;
+    };
+
     const filteredEntries = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
+        if (!isValidDataArray(zeroScores)) return [];
         
         let filtered = [...zeroScores];
 
@@ -295,36 +313,27 @@ const ZeroScoreReviewView: React.FC<ZeroScoreReviewViewProps> = ({
     }, [zeroScores, filterReviewed, filterTeacher, filterSubject, filterTerm, filterClass, filterDateFrom, filterDateTo]);
 
     const uniqueTeachers = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
-        const seenIds = new Set<string>();
-        return zeroScores
-            .map(z => z.teacher)
-            .filter(t => t && !seenIds.has(t.id) && seenIds.add(t.id)) as UserProfile[];
+        if (!isValidDataArray(zeroScores)) return [];
+        return deduplicateById(zeroScores.map(z => z.teacher)) as UserProfile[];
     }, [zeroScores]);
 
     const uniqueSubjects = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
+        if (!isValidDataArray(zeroScores)) return [];
         return [...new Set(zeroScores.map(z => z.subject_name))].filter(Boolean).sort();
     }, [zeroScores]);
 
     const uniqueTerms = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
-        const seenIds = new Set<number>();
-        return zeroScores
-            .map(z => z.term)
-            .filter(t => t && !seenIds.has(t.id) && seenIds.add(t.id)) as Term[];
+        if (!isValidDataArray(zeroScores)) return [];
+        return deduplicateById(zeroScores.map(z => z.term)) as Term[];
     }, [zeroScores]);
 
     const uniqueClasses = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
-        const seenIds = new Set<number>();
-        return zeroScores
-            .map(z => z.academic_class)
-            .filter(c => c && !seenIds.has(c.id) && seenIds.add(c.id)) as AcademicClass[];
+        if (!isValidDataArray(zeroScores)) return [];
+        return deduplicateById(zeroScores.map(z => z.academic_class)) as AcademicClass[];
     }, [zeroScores]);
 
     const stats = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return { total: 0, reviewed: 0, unreviewed: 0, bySubject: {} };
+        if (!isValidDataArray(zeroScores)) return { total: 0, reviewed: 0, unreviewed: 0, bySubject: {} };
         
         const total = zeroScores.length;
         const reviewed = zeroScores.filter(z => z.reviewed).length;
