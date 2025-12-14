@@ -30,6 +30,8 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
     const fetchZeroScores = async () => {
         setLoading(true);
         try {
+            // Limit to 5000 records - zero_score_entries is typically a smaller table
+            // filtered by term, so this should be sufficient for most use cases
             const { data, error } = await supabase
                 .from('zero_score_entries')
                 .select(`
@@ -49,6 +51,11 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper function for null safety checks - ensures data is valid array
+    const isValidDataArray = (data: any): data is ZeroScoreEntry[] => {
+        return data && Array.isArray(data);
     };
 
     const handleMarkReviewed = async (entryId: number) => {
@@ -173,7 +180,7 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
     };
 
     const filteredEntries = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
+        if (!isValidDataArray(zeroScores)) return [];
         
         let filtered = [...zeroScores];
 
@@ -198,7 +205,7 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
     }, [zeroScores, filterReviewed, filterClass, filterSubject]);
 
     const uniqueClasses = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
+        if (!isValidDataArray(zeroScores)) return [];
         const classMap = new Map();
         zeroScores.forEach(z => {
             if (z.academic_class && !classMap.has(z.academic_class_id)) {
@@ -209,12 +216,12 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
     }, [zeroScores]);
 
     const uniqueSubjects = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return [];
+        if (!isValidDataArray(zeroScores)) return [];
         return [...new Set(zeroScores.map(z => z.subject_name))].sort();
     }, [zeroScores]);
 
     const stats = useMemo(() => {
-        if (!zeroScores || !Array.isArray(zeroScores)) return { total: 0, reviewed: 0, unreviewed: 0, bySubject: {} };
+        if (!isValidDataArray(zeroScores)) return { total: 0, reviewed: 0, unreviewed: 0, bySubject: {} };
         
         const total = zeroScores.length;
         const reviewed = zeroScores.filter(z => z.reviewed).length;
