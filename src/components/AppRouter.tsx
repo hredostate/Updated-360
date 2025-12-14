@@ -66,7 +66,6 @@ const PayrollPortal = lazy(() => import('./PayrollPortal'));
 const SocialMediaHubView = lazy(() => import('./SocialMediaHubView'));
 const TeacherAttendanceDashboard = lazy(() => import('./TeacherAttendanceDashboard'));
 const PredictiveAnalyticsDashboard = lazy(() => import('./analytics/PredictiveAnalyticsDashboard'));
-const ZeroScoreReviewView = lazy(() => import('./ZeroScoreReviewView'));
 const CampusStatsReport = lazy(() => import('./CampusStatsReport'));
 
 // Lesson Plan Enhancement Components
@@ -324,18 +323,6 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                     assessments={data.assessments}
                     assessmentScores={data.assessmentScores}
                     classGroups={data.classGroups}
-                />
-            </Suspense>;
-        case VIEWS.ZERO_SCORE_MONITOR:
-            return <Suspense fallback={<div className="flex justify-center pt-10"><Spinner size="lg" /></div>}>
-                <ZeroScoreReviewView 
-                    userProfile={data.userProfile}
-                    onBack={() => actions.handleNavigate(VIEWS.DASHBOARD)}
-                    addToast={actions.addToast}
-                    onReviewZeroScore={actions.handleReviewZeroScore}
-                    onUnenrollStudent={actions.handleUnenrollStudentFromSubject}
-                    onDeleteZeroScoreEntry={actions.handleDeleteZeroScoreEntry}
-                    onBulkReviewZeroScores={actions.handleBulkReviewZeroScores}
                 />
             </Suspense>;
         case VIEWS.COMPLIANCE_TRACKER:
