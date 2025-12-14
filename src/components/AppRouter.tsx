@@ -66,7 +66,6 @@ const PayrollPortal = lazy(() => import('./PayrollPortal'));
 const SocialMediaHubView = lazy(() => import('./SocialMediaHubView'));
 const TeacherAttendanceDashboard = lazy(() => import('./TeacherAttendanceDashboard'));
 const PredictiveAnalyticsDashboard = lazy(() => import('./analytics/PredictiveAnalyticsDashboard'));
-const ZeroScoreMonitorView = lazy(() => import('./ZeroScoreMonitorView'));
 const CampusStatsReport = lazy(() => import('./CampusStatsReport'));
 
 // Lesson Plan Enhancement Components
@@ -324,14 +323,6 @@ const AppRouter: React.FC<AppRouterProps> = ({ currentView, data, actions }) => 
                     assessments={data.assessments}
                     assessmentScores={data.assessmentScores}
                     classGroups={data.classGroups}
-                />
-            </Suspense>;
-        case VIEWS.ZERO_SCORE_MONITOR:
-            return <Suspense fallback={<div className="flex justify-center pt-10"><Spinner size="lg" /></div>}>
-                <ZeroScoreMonitorView 
-                    userProfile={data.userProfile}
-                    onBack={() => actions.handleNavigate(VIEWS.DASHBOARD)}
-                    addToast={actions.addToast}
                 />
             </Suspense>;
         case VIEWS.COMPLIANCE_TRACKER:
