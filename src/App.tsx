@@ -101,7 +101,7 @@ const QuizTakerView = lazyWithRetry(() => import('./components/QuizTakerView'));
 const TeachingAssignmentsContainer = lazyWithRetry(() => import('./components/TeachingAssignmentsContainer'));
 const HRPayrollModule = lazyWithRetry(() => import('./components/HRPayrollModule'));
 const StoreManager = lazyWithRetry(() => import('./components/StoreManager'));
-const ZeroScoreMonitorView = lazyWithRetry(() => import('./components/ZeroScoreMonitorView'));
+const ZeroScoreReviewView = lazyWithRetry(() => import('./components/ZeroScoreReviewView'));
 const AppRouter = lazyWithRetry(() => import('./components/AppRouter'));
 const AbsenceRequestsView = lazyWithRetry(() => import('./components/AbsenceRequestsView'));
 
@@ -4047,6 +4047,114 @@ const App: React.FC = () => {
         }
     }, [userProfile, userType, addToast, setAcademicAssignments]);
 
+    // --- Zero Score Review Handlers ---
+    const handleReviewZeroScore = useCallback(async (entryId: number, notes?: string): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        
+        try {
+            const { error } = await supabase
+                .from('zero_score_entries')
+                .update({
+                    reviewed: true,
+                    reviewed_by: userProfile.id,
+                    reviewed_at: new Date().toISOString(),
+                    review_notes: notes || null
+                })
+                .eq('id', entryId);
+            
+            if (error) {
+                addToast(`Error marking entry as reviewed: ${error.message}`, 'error');
+                return false;
+            }
+            
+            addToast('Entry marked as reviewed successfully.', 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error reviewing entry: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast]);
+
+    const handleUnenrollStudentFromSubject = useCallback(async (
+        studentId: number, 
+        classId: number, 
+        subjectName: string, 
+        termId: number
+    ): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        
+        try {
+            // Remove the student's score entry for this subject
+            // This effectively unenrolls them from the subject
+            const { error: deleteScoreError } = await supabase
+                .from('score_entries')
+                .delete()
+                .eq('student_id', studentId)
+                .eq('academic_class_id', classId)
+                .eq('subject_name', subjectName)
+                .eq('term_id', termId);
+            
+            if (deleteScoreError) {
+                addToast(`Error unenrolling student: ${deleteScoreError.message}`, 'error');
+                return false;
+            }
+            
+            addToast('Student unenrolled from subject successfully.', 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error unenrolling student: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast]);
+
+    const handleDeleteZeroScoreEntry = useCallback(async (entryId: number): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        
+        try {
+            const { error } = await supabase
+                .from('zero_score_entries')
+                .delete()
+                .eq('id', entryId);
+            
+            if (error) {
+                addToast(`Error deleting entry: ${error.message}`, 'error');
+                return false;
+            }
+            
+            addToast('Zero score entry deleted successfully.', 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error deleting entry: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast]);
+
+    const handleBulkReviewZeroScores = useCallback(async (entryIds: number[]): Promise<boolean> => {
+        if (!userProfile || userType !== 'staff') return false;
+        
+        try {
+            const { error } = await supabase
+                .from('zero_score_entries')
+                .update({
+                    reviewed: true,
+                    reviewed_by: userProfile.id,
+                    reviewed_at: new Date().toISOString()
+                })
+                .in('id', entryIds);
+            
+            if (error) {
+                addToast(`Error bulk reviewing entries: ${error.message}`, 'error');
+                return false;
+            }
+            
+            addToast(`${entryIds.length} entries marked as reviewed successfully.`, 'success');
+            return true;
+        } catch (error: any) {
+            addToast(`Error bulk reviewing entries: ${error.message}`, 'error');
+            return false;
+        }
+    }, [userProfile, userType, addToast]);
+
     // --- Campus Handlers ---
     const handleSaveCampus = useCallback(async (campus: Partial<Campus>) => {
         if (!userProfile) return false;
@@ -5422,6 +5530,10 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                                         handleSaveScores,
                                         handleUpdateScore,
                                         handleSubmitScoresForReview,
+                                        handleReviewZeroScore,
+                                        handleUnenrollStudentFromSubject,
+                                        handleDeleteZeroScoreEntry,
+                                        handleBulkReviewZeroScores,
                                         handleSaveAssessment,
                                         handleDeleteAssessment,
                                         handleSaveAssessmentScores,
@@ -5675,7 +5787,12 @@ Focus on assignments with low completion rates or coverage issues. Return an emp
                                     handleCopyLessonPlan,
                                     handleApproveLessonPlan,
                                     handleSaveScores,
+                                    handleUpdateScore,
                                     handleSubmitScoresForReview,
+                                    handleReviewZeroScore,
+                                    handleUnenrollStudentFromSubject,
+                                    handleDeleteZeroScoreEntry,
+                                    handleBulkReviewZeroScores,
                                     handleSaveAssessment,
                                     handleDeleteAssessment,
                                     handleSaveAssessmentScores,
