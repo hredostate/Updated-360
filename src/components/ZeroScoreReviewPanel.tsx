@@ -240,33 +240,33 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
         <div className="space-y-4">
             {/* Summary Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-slate-200 dark:border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Zero Scores</h3>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</p>
+                <div className="bg-white rounded-lg shadow p-4 border border-slate-200">
+                    <h3 className="text-sm font-medium text-slate-500">Total Zero Scores</h3>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-slate-200 dark:border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Unreviewed</h3>
-                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">{stats.unreviewed}</p>
+                <div className="bg-white rounded-lg shadow p-4 border border-slate-200">
+                    <h3 className="text-sm font-medium text-slate-500">Unreviewed</h3>
+                    <p className="text-2xl font-bold text-orange-600 mt-1">{stats.unreviewed}</p>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-slate-200 dark:border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Reviewed</h3>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{stats.reviewed}</p>
+                <div className="bg-white rounded-lg shadow p-4 border border-slate-200">
+                    <h3 className="text-sm font-medium text-slate-500">Reviewed</h3>
+                    <p className="text-2xl font-bold text-green-600 mt-1">{stats.reviewed}</p>
                 </div>
             </div>
 
             {/* Subject Breakdown */}
             {stats.unreviewed > 0 && Object.keys(stats.bySubject).length > 0 && (
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-slate-200 dark:border-slate-700">
-                    <h3 className="text-sm font-medium text-slate-900 dark:text-white mb-2">Unreviewed by Subject</h3>
+                <div className="bg-white rounded-lg shadow p-4 border border-slate-200">
+                    <h3 className="text-sm font-medium text-slate-900 mb-2">Unreviewed by Subject</h3>
                     <div className="flex flex-wrap gap-2">
                         {Object.entries(stats.bySubject)
                             .sort(([, a], [, b]) => b - a)
                             .map(([subject, count]) => (
                                 <span
                                     key={subject}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700"
                                 >
-                                    {subject}: <span className="font-bold text-orange-600 dark:text-orange-400">{count}</span>
+                                    {subject}: <span className="font-bold text-orange-600">{count}</span>
                                 </span>
                             ))}
                     </div>
@@ -274,20 +274,20 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
             )}
 
             {/* Filters */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4 border border-slate-200 dark:border-slate-700">
+            <div className="bg-white rounded-lg shadow p-4 border border-slate-200">
                 <div className="flex items-center gap-2 mb-3">
-                    <FilterIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filters</h3>
+                    <FilterIcon className="w-4 h-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">Filters</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
                             Review Status
                         </label>
                         <select
                             value={filterReviewed}
                             onChange={(e) => setFilterReviewed(e.target.value as any)}
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-md bg-white text-slate-900"
                         >
                             <option value="all">All</option>
                             <option value="unreviewed">Unreviewed</option>
@@ -295,13 +295,13 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
                             Class
                         </label>
                         <select
                             value={filterClass}
                             onChange={(e) => setFilterClass(e.target.value)}
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-md bg-white text-slate-900"
                         >
                             <option value="all">All Classes</option>
                             {uniqueClasses.map(cls => (
@@ -310,13 +310,13 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-medium text-slate-700 mb-1">
                             Subject
                         </label>
                         <select
                             value={filterSubject}
                             onChange={(e) => setFilterSubject(e.target.value)}
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded-md bg-white text-slate-900"
                         >
                             <option value="all">All Subjects</option>
                             {uniqueSubjects.map(subject => (
@@ -329,9 +329,9 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
 
             {/* Bulk Actions */}
             {selectedEntries.size > 0 && (
-                <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg p-3">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
                     <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                        <span className="text-sm font-medium text-slate-900">
                             {selectedEntries.size} {selectedEntries.size === 1 ? 'entry' : 'entries'} selected
                         </span>
                         <button
@@ -346,89 +346,89 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
             )}
 
             {/* Entries Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-slate-50 dark:bg-slate-700">
+                        <thead className="bg-slate-50">
                             <tr>
                                 <th className="px-3 py-2 text-left">
                                     <input
                                         type="checkbox"
                                         checked={filteredEntries.length > 0 && selectedEntries.size === filteredEntries.length}
                                         onChange={toggleSelectAll}
-                                        className="rounded border-slate-300 dark:border-slate-600"
+                                        className="rounded border-slate-300"
                                     />
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Student
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Subject
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Class
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Score
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Teacher
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        <tbody className="divide-y divide-slate-200">
                             {filteredEntries.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="px-3 py-8 text-center text-slate-500 dark:text-slate-400">
+                                    <td colSpan={9} className="px-3 py-8 text-center text-slate-500">
                                         No zero score entries found
                                     </td>
                                 </tr>
                             ) : (
                                 filteredEntries.map((entry) => (
-                                    <tr key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <tr key={entry.id} className="hover:bg-slate-50">
                                         <td className="px-3 py-2">
                                             <input
                                                 type="checkbox"
                                                 checked={selectedEntries.has(entry.id)}
                                                 onChange={() => toggleSelection(entry.id)}
-                                                className="rounded border-slate-300 dark:border-slate-600"
+                                                className="rounded border-slate-300"
                                             />
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2 text-sm text-slate-900">
                                             {entry.student?.name || 'Unknown'}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2 text-sm text-slate-900">
                                             {entry.subject_name}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2 text-sm text-slate-900">
                                             {entry.academic_class?.name || 'N/A'}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2 text-sm text-slate-900">
                                             {entry.total_score}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                                        <td className="px-3 py-2 text-sm text-slate-500">
                                             {new Date(entry.entry_date).toLocaleDateString()}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-slate-900 dark:text-white">
+                                        <td className="px-3 py-2 text-sm text-slate-900">
                                             {entry.teacher?.name || 'Unknown'}
                                         </td>
                                         <td className="px-3 py-2 text-sm">
                                             {entry.reviewed ? (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                     <CheckCircleIcon className="w-3 h-3" />
                                                     Reviewed
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                                     <XCircleIcon className="w-3 h-3" />
                                                     Unreviewed
                                                 </span>
@@ -442,7 +442,7 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
                                                             setSelectedEntry(entry);
                                                             setReviewNotes('');
                                                         }}
-                                                        className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                                        className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
                                                         title="Review"
                                                     >
                                                         Review
@@ -450,14 +450,14 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
                                                 )}
                                                 <button
                                                     onClick={() => setShowUnenrollConfirm(entry)}
-                                                    className="p-1 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded"
+                                                    className="p-1 text-orange-600 hover:bg-orange-50 rounded"
                                                     title="Unenroll Student"
                                                 >
                                                     <UserMinusIcon className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => setShowDeleteConfirm(entry.id)}
-                                                    className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                                    className="p-1 text-red-600 hover:bg-red-50 rounded"
                                                     title="Delete Entry"
                                                 >
                                                     <TrashIcon className="w-4 h-4" />
@@ -475,62 +475,62 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
             {/* Review Modal */}
             {selectedEntry && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">
                                 Review Zero Score Entry
                             </h2>
                             
                             <div className="space-y-3 mb-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Student</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">{selectedEntry.student?.name}</p>
+                                        <label className="block text-xs font-medium text-slate-700">Student</label>
+                                        <p className="text-sm text-slate-900">{selectedEntry.student?.name}</p>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Subject</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">{selectedEntry.subject_name}</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Class</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">{selectedEntry.academic_class?.name}</p>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Score</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">{selectedEntry.total_score}</p>
+                                        <label className="block text-xs font-medium text-slate-700">Subject</label>
+                                        <p className="text-sm text-slate-900">{selectedEntry.subject_name}</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Teacher</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">{selectedEntry.teacher?.name}</p>
+                                        <label className="block text-xs font-medium text-slate-700">Class</label>
+                                        <p className="text-sm text-slate-900">{selectedEntry.academic_class?.name}</p>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Entry Date</label>
-                                        <p className="text-sm text-slate-900 dark:text-white">
+                                        <label className="block text-xs font-medium text-slate-700">Score</label>
+                                        <p className="text-sm text-slate-900">{selectedEntry.total_score}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-700">Teacher</label>
+                                        <p className="text-sm text-slate-900">{selectedEntry.teacher?.name}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-700">Entry Date</label>
+                                        <p className="text-sm text-slate-900">
                                             {new Date(selectedEntry.entry_date).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
                                 {selectedEntry.teacher_comment && (
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Teacher Comment</label>
-                                        <p className="text-sm text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 p-2 rounded">
+                                        <label className="block text-xs font-medium text-slate-700 mb-1">Teacher Comment</label>
+                                        <p className="text-sm text-slate-900 bg-slate-100 p-2 rounded">
                                             {selectedEntry.teacher_comment}
                                         </p>
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className="block text-xs font-medium text-slate-700 mb-1">
                                         Review Notes (Optional)
                                     </label>
                                     <textarea
                                         value={reviewNotes}
                                         onChange={(e) => setReviewNotes(e.target.value)}
                                         rows={3}
-                                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-slate-900"
                                         placeholder="Enter your review notes..."
                                     />
                                 </div>
@@ -542,7 +542,7 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
                                         setSelectedEntry(null);
                                         setReviewNotes('');
                                     }}
-                                    className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                                    className="px-4 py-2 text-sm border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
                                     disabled={isProcessing}
                                 >
                                     Cancel
@@ -563,15 +563,15 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm !== null && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Delete Zero Score Entry</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Delete Zero Score Entry</h3>
+                        <p className="text-sm text-slate-600 mb-4">
                             Are you sure you want to delete this zero score entry? This action cannot be undone.
                         </p>
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                                className="px-4 py-2 text-sm border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
                                 disabled={isProcessing}
                             >
                                 Cancel
@@ -591,16 +591,16 @@ const ZeroScoreReviewPanel: React.FC<ZeroScoreReviewPanelProps> = ({ termId, add
             {/* Unenroll Confirmation Modal */}
             {showUnenrollConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Unenroll Student</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Unenroll Student</h3>
+                        <p className="text-sm text-slate-600 mb-4">
                             Are you sure you want to unenroll <strong>{showUnenrollConfirm.student?.name}</strong> from{' '}
                             <strong>{showUnenrollConfirm.subject_name}</strong>? This will delete their score entry for this subject.
                         </p>
                         <div className="flex justify-end gap-2">
                             <button
                                 onClick={() => setShowUnenrollConfirm(null)}
-                                className="px-4 py-2 text-sm border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+                                className="px-4 py-2 text-sm border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50"
                                 disabled={isProcessing}
                             >
                                 Cancel
